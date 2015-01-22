@@ -15,7 +15,7 @@ setup(
 	description='A small package for extra utils for tenant schemas',
 	long_description=README,
 	url="http://onepercentclub.com",
-	author="1%Club Developers"
+	author="1%Club Developers",
 	author_email="devteam@onepercentclub.com", 
 	install_requires=[
 		'Django >= 1.6.8',
