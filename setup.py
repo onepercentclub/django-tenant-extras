@@ -8,7 +8,7 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
 	name="django-tenant-extras",
-	version=tenant_extras.__version__,,
+	version=tenant_extras.__version__,
 	packages=['tenant_extras'],
 	include_package_data=True,
 	license='None',
