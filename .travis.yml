@@ -1,0 +1,13 @@
+language: python
+sudo: false
+cache:
+  directories:
+  - $HOME/.pip-cache/
+  - frontend/node_modules
+python:
+- '2.7'
+env:
+  matrix:
+  - DJANGO=django==1.6.8"
+script:
+- python ./setup.py test
