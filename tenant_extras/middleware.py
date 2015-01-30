@@ -17,12 +17,12 @@ from django.db import connection
 _translations = {}
 
 def tenant_translation(language, tenant_locale_path=None):
-	"""
-	This is taken from the Django translation utils
-	https://github.com/django/django/blob/1.6.8/django/utils/translation/trans_real.py#L101-L180
+    """
+    This is taken from the Django translation utils
+    https://github.com/django/django/blob/1.6.8/django/utils/translation/trans_real.py#L101-L180
 
-	It has been altered to handle tenant specific locale file paths. 
-	"""
+    It has been altered to handle tenant specific locale file paths. 
+    """
 
     global _translations
 
