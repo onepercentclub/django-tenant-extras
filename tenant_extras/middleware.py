@@ -112,3 +112,9 @@ class TenantLocaleMiddleware(_LocaleMiddleware):
             request, check_path=check_path)
         translation._trans._active.value = tenant_translation(language, site_locale)
         request.LANGUAGE_CODE = translation.get_language()
+
+    def process_response(self, request, response):
+        response['Content-Language'] = translation.get_language()
+        translation.deactivate()
+        
+        return response
