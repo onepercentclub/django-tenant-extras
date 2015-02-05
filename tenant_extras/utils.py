@@ -4,7 +4,7 @@ from django.db.models import get_model
 
 
 def get_client_model():
-    return get_model_class('CLIENT_MODEL')
+    return get_model_class('CLIENTS_CLIENT_MODEL')
 
 def get_model_class(model_name=None):
     """
