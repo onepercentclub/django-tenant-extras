@@ -2,7 +2,7 @@ from django.utils._os import safe_join
 import os
 from django.conf import settings
 from django.contrib.staticfiles.finders import FileSystemFinder
-from .utils import get_client_model
+from tenant_schemas.utils import get_tenant_model
 
 
 class TenantStaticFilesFinder(FileSystemFinder):
@@ -15,7 +15,7 @@ class TenantStaticFilesFinder(FileSystemFinder):
         MULTI_TENANT_DIR/greatbarier/static/images/logo.jpg
 
         """
-        tenants = get_client_model().objects.all()
+        tenants = get_tenant_model().objects.all()
         tenant_dir = getattr(settings, 'MULTI_TENANT_DIR', None)
 
         if not tenant_dir:
