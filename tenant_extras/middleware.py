@@ -4,6 +4,7 @@ import sys
 
 import gettext as gettext_module
 
+from django import http
 from django.conf import settings
 from django.utils.importlib import import_module
 from django.middleware.locale import LocaleMiddleware as _LocaleMiddleware
@@ -12,6 +13,8 @@ from django.utils import translation
 from django.utils._os import upath
 
 from django.db import connection
+
+from bluebottle.clients import properties
 
 
 _translations = {}
@@ -29,8 +32,6 @@ def tenant_translation(language, tenant_locale_path=None):
     t = _translations.get(language, None)
     if t is not None:
         return t
-
-    from django.conf import settings
 
     globalpath = os.path.join(os.path.dirname(upath(sys.modules[settings.__module__].__file__)), 'locale')
 
@@ -114,7 +115,93 @@ class TenantLocaleMiddleware(_LocaleMiddleware):
         request.LANGUAGE_CODE = translation.get_language()
 
     def process_response(self, request, response):
+        response = super(TenantLocaleMiddleware, self).process_response(request, response)
+
+        """ Store the language in the session """
+        lang_code = translation.get_language()
+
+        if hasattr(request, 'session'):
+            """ Set the language in the session if it has changed """
+            if (request.session.get('django_language', False) and 
+                    request.session['django_language'] != lang_code):
+                request.session['django_language'] = lang_code
+        else:
+            """ Fall back to language cookie """
+            response.set_cookie(settings.LANGUAGE_COOKIE_NAME, lang_code)
+            
         response['Content-Language'] = translation.get_language()
         translation.deactivate()
         
         return response
+
+
+class LocaleRedirectMiddleware(object):
+    """
+    If i18n_patterns are used, the language is not set in the session.
+    This causes the middleware to potentially set an incorrect language on the
+    current request when the frontend language differs from the browser language.
+
+    This middleware fixes this in two ways:
+        * first, a check is performed if the user is logged in. The preferred
+          language is taken from his/her preferences.
+
+        TODO: set the language in session for anonymous users.
+
+        TODO: another workaround: when users (logged in or anonymous) select the
+        language, is firing an API call which eventually calls Django's
+        set_language view. This forces the language into the session.
+    """
+
+    def process_request(self, request):
+        """ 
+        This builds strongly on django's Locale middleware, so check 
+        if it's enabled.
+
+        This middleware is only relevant with i18n_patterns.
+        """
+        url_parts = request.path.split('/')
+        current_url_lang_prefix = url_parts[1]
+
+        # Don't redirect on API requests
+        if url_parts[1] == 'api':
+            return
+
+        try:
+            authenticated = request.user.is_authenticated()
+        except AttributeError:
+            authenticated = False
+
+        if authenticated:
+            lang_code = request.user.primary_language
+
+            if lang_code:
+                # Early redirect based on language to prevent Ember from
+                # finding out and redirect after loading a complete page
+                # in the wrong language.
+                expected_url_lang_prefix = '/{0}/'.format(lang_code)
+
+                if len(url_parts) >= 2:
+                    if current_url_lang_prefix in dict(properties.LANGUAGES).keys() and not request.path.startswith(
+                            expected_url_lang_prefix):
+                        new_location = request.get_full_path().replace(
+                            '/{0}/'.format(current_url_lang_prefix), expected_url_lang_prefix)
+
+                        return http.HttpResponseRedirect(new_location)
+                # End early redirect.
+
+        else:
+            if hasattr(request, 'session'):
+                """ Redirect to the language in the session if it is different """
+                import ipdb; ipdb.set_trace()
+                session_language = request.session['django_language']
+                if session_language and session_language != current_url_lang_prefix:
+                    expected_url_lang_prefix = '/{0}/'.format(session_language)
+                    new_location = request.get_full_path().replace(
+                                    '/{0}/'.format(current_url_lang_prefix), expected_url_lang_prefix)
+
+                    return http.HttpResponseRedirect(new_location)
+
+                else:
+                    """ Fall back to language cookie """
+                    import ipdb; ipdb.set_trace()
+                    # response.set_cookie(settings.LANGUAGE_COOKIE_NAME, lang_code)
