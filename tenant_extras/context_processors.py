@@ -1,3 +1,5 @@
+import json
+
 from django.db import connection
 from bluebottle.clients import properties
 
