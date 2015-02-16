@@ -192,16 +192,15 @@ class LocaleRedirectMiddleware(object):
         else:
             if hasattr(request, 'session'):
                 """ Redirect to the language in the session if it is different """
-                import ipdb; ipdb.set_trace()
                 session_language = request.session['django_language']
-                if session_language and session_language != current_url_lang_prefix:
-                    expected_url_lang_prefix = '/{0}/'.format(session_language)
-                    new_location = request.get_full_path().replace(
-                                    '/{0}/'.format(current_url_lang_prefix), expected_url_lang_prefix)
 
-                    return http.HttpResponseRedirect(new_location)
+            else:
+                """ Fall back to language cookie """
+                session_language = request.COOKIES.get(settings.LANGUAGE_COOKIE_NAME)
 
-                else:
-                    """ Fall back to language cookie """
-                    import ipdb; ipdb.set_trace()
-                    # response.set_cookie(settings.LANGUAGE_COOKIE_NAME, lang_code)
+            if session_language and session_language != current_url_lang_prefix:
+                expected_url_lang_prefix = '/{0}/'.format(session_language)
+                new_location = request.get_full_path().replace(
+                                '/{0}/'.format(current_url_lang_prefix), expected_url_lang_prefix)
+
+                return http.HttpResponseRedirect(new_location)
