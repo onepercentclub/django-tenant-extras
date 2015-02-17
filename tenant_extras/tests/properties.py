@@ -1,5 +1,3 @@
-import mock
-
 from django.conf import settings
 
 

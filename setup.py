@@ -24,8 +24,7 @@ setup(
     ],
     tests_require={
         'django-nose==1.3',
-        'django-setuptest==0.1.4',
-        'mock'
+        'django-setuptest==0.1.4'
     },
     test_suite = "tenant_extras.runtests.runtests",
     classifiers=[
