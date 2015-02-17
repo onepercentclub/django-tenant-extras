@@ -1,7 +1,7 @@
 import json
 
 from django.db import connection
-from bluebottle.clients import properties
+from .utils import get_tenant_properties
 
 
 def tenant(request):
@@ -10,6 +10,7 @@ def tenant(request):
     """
     if connection.tenant:
         current_tenant = connection.tenant
+        properties = get_tenant_properties()
 
         return {
             'DONATIONS_ENABLED': getattr(properties, 'DONATIONS_ENABLED'),

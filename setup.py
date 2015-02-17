@@ -19,9 +19,15 @@ setup(
     author="1%Club Developers",
     author_email="devteam@onepercentclub.com",
     install_requires=[
-        'Django >= 1.6.8',
+        'Django >= 1.6.8,<1.7',
         'django-tenant-schemas >= 1.5.0',
     ],
+    tests_require={
+        'django-nose==1.3',
+        'django-setuptest==0.1.4',
+        'mock'
+    },
+    test_suite = "tenant_extras.runtests.runtests",
     classifiers=[
         'Environment :: Web Environment',
         'Framework :: Django',
