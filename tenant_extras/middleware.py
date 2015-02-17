@@ -204,6 +204,11 @@ class LocaleRedirectMiddleware(object):
                 """ Fall back to language cookie """
                 lang_code = request.COOKIES.get(settings.LANGUAGE_COOKIE_NAME)
 
+            # If language code from the session or cookie is not supported then
+            # clear the value.
+            if not lang_code in dict(properties.LANGUAGES).keys():
+                lang_code = ''
+
             # If no language found and the request doesn't already set a
             # language code then set the default language
             if not (lang_code or current_url_lang_prefix):
