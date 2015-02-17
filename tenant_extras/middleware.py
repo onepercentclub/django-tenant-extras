@@ -11,6 +11,7 @@ from django.middleware.locale import LocaleMiddleware as _LocaleMiddleware
 from django.utils.translation.trans_real import to_locale, DjangoTranslation
 from django.utils import translation
 from django.utils._os import upath
+from django.core.urlresolvers import LocaleRegexURLResolver, get_resolver
 
 from django.db import connection
 
@@ -159,6 +160,9 @@ class LocaleRedirectMiddleware(object):
 
         This middleware is only relevant with i18n_patterns.
         """
+        if not isinstance(get_resolver(request.path_info), LocaleRegexURLResolver):
+            return
+
         properties = get_tenant_properties()
         url_parts = request.path.split('/')
         current_url_lang_prefix = url_parts[1]
@@ -167,10 +171,6 @@ class LocaleRedirectMiddleware(object):
         # set the current_url_lang_prefix to ''
         if not current_url_lang_prefix in dict(properties.LANGUAGES).keys():
             current_url_lang_prefix = ''
-
-        # Don't redirect on API requests
-        if url_parts[1] == 'api':
-            return
 
         try:
             authenticated = request.user.is_authenticated()
