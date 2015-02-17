@@ -14,7 +14,7 @@ from django.utils._os import upath
 
 from django.db import connection
 
-from bluebottle.clients import properties
+from .utils import get_tenant_properties
 
 
 _translations = {}
@@ -159,8 +159,14 @@ class LocaleRedirectMiddleware(object):
 
         This middleware is only relevant with i18n_patterns.
         """
+        properties = get_tenant_properties()
         url_parts = request.path.split('/')
         current_url_lang_prefix = url_parts[1]
+
+        # Is the prefix a valid language code. If it isn't then
+        # set the current_url_lang_prefix to ''
+        if not current_url_lang_prefix in dict(properties.LANGUAGES).keys():
+            current_url_lang_prefix = ''
 
         # Don't redirect on API requests
         if url_parts[1] == 'api':
@@ -181,7 +187,7 @@ class LocaleRedirectMiddleware(object):
                 expected_url_lang_prefix = '/{0}/'.format(lang_code)
 
                 if len(url_parts) >= 2:
-                    if current_url_lang_prefix in dict(properties.LANGUAGES).keys() and not request.path.startswith(
+                    if current_url_lang_prefix and not request.path.startswith(
                             expected_url_lang_prefix):
                         new_location = request.get_full_path().replace(
                             '/{0}/'.format(current_url_lang_prefix), expected_url_lang_prefix)
@@ -192,15 +198,30 @@ class LocaleRedirectMiddleware(object):
         else:
             if hasattr(request, 'session'):
                 """ Redirect to the language in the session if it is different """
-                session_language = request.session['django_language']
+                lang_code = request.session['django_language']
 
             else:
                 """ Fall back to language cookie """
-                session_language = request.COOKIES.get(settings.LANGUAGE_COOKIE_NAME)
+                lang_code = request.COOKIES.get(settings.LANGUAGE_COOKIE_NAME)
 
-            if session_language and session_language != current_url_lang_prefix:
-                expected_url_lang_prefix = '/{0}/'.format(session_language)
-                new_location = request.get_full_path().replace(
+            # If no language found and the request doesn't already set a
+            # language code then set the default language
+            if not (lang_code or current_url_lang_prefix):
+                default_language = getattr(properties, 'LANGUAGE_CODE', None)
+                if default_language:
+                    lang_code = default_language
+                else:
+                    lang_code = 'en'
+
+            if lang_code and lang_code != current_url_lang_prefix:
+                if current_url_lang_prefix:
+                    expected_url_lang_prefix = '/{0}/'.format(lang_code)
+                    
+                    # Replace current url language prefix
+                    new_location = request.get_full_path().replace(
                                 '/{0}/'.format(current_url_lang_prefix), expected_url_lang_prefix)
+                else:
+                    # Add url language prefix
+                    new_location = '/{0}{1}'.format(lang_code, request.get_full_path())
 
                 return http.HttpResponseRedirect(new_location)

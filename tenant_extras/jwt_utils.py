@@ -2,9 +2,11 @@ import jwt
 
 from rest_framework_jwt.settings import api_settings
 
-from bluebottle.clients import properties
+from .utils import get_tenant_properties
+
 
 def jwt_secret_key():
+    properties = get_tenant_properties()
     try:
         return properties.TENANT_JWT_SECRET
     except AttributeError:
