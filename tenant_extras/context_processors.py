@@ -17,7 +17,7 @@ def tenant(request):
             'RECURRING_DONATIONS_ENABLED': getattr(properties, 'RECURRING_DONATIONS_ENABLED'),
             'TENANT': connection,
             'TENANT_LANGUAGE': '{0}{1}'.format(current_tenant.client_name, request.LANGUAGE_CODE),
-            'LANGUAGES': json.dumps([{'code': lang[0], 'name': lang[1]} for lang in getattr(properties, 'LANGUAGES')]),
+            'LANGUAGES': json.dumps([{'code': lang[0], 'name': lang[1]} for lang in getattr(properties, 'LANGUAGES')])
          }
     return {}
 
