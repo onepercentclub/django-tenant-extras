@@ -177,22 +177,6 @@ class LocaleRedirectMiddleware(object):
 
         if authenticated:
             lang_code = request.user.primary_language
-
-            if lang_code:
-                # Early redirect based on language to prevent Ember from
-                # finding out and redirect after loading a complete page
-                # in the wrong language.
-                expected_url_lang_prefix = '/{0}/'.format(lang_code)
-
-                if len(url_parts) >= 2:
-                    if current_url_lang_prefix and not request.path.startswith(
-                            expected_url_lang_prefix):
-                        new_location = request.get_full_path().replace(
-                            '/{0}/'.format(current_url_lang_prefix), expected_url_lang_prefix)
-
-                        return http.HttpResponseRedirect(new_location)
-                # End early redirect.
-
         else:
             if hasattr(request, 'session'):
                 # Redirect to the language in the session if it is different
@@ -202,32 +186,31 @@ class LocaleRedirectMiddleware(object):
                 # Fall back to language cookie
                 lang_code = request.COOKIES.get(settings.LANGUAGE_COOKIE_NAME)
 
-            # If language code from the session or cookie is not supported then
-            # clear the value.
-            if not lang_code in dict(_supported_languages).keys():
-                lang_code = ''
+        # If language code not supported then clear the value.
+        if not lang_code in dict(_supported_languages).keys():
+            lang_code = ''
 
-            prefix_is_lang = (current_url_lang_prefix in dict(_supported_languages).keys())
+        prefix_is_lang = (current_url_lang_prefix in dict(_supported_languages).keys())
 
-            # If no language found and the request doesn't already set a
-            # language code then set the default language
-            if not lang_code and not prefix_is_lang:
-                if _default_language:
-                    lang_code = _default_language
-                else:
-                    lang_code = 'en'
+        # If no language found and the request doesn't already set a
+        # language code then set the default language
+        if not lang_code and not prefix_is_lang:
+            if _default_language:
+                lang_code = _default_language
+            else:
+                lang_code = 'en'
 
-            if lang_code and lang_code != current_url_lang_prefix:
-                if prefix_is_lang:
-                    # Replace current url language prefix
-                    expected_url_lang_prefix = '/{0}/'.format(lang_code)                    
-                    new_location = request.get_full_path().replace(
-                                '/{0}/'.format(current_url_lang_prefix), expected_url_lang_prefix)
-                else:
-                    # Add url language prefix
-                    new_location = '/{0}{1}'.format(lang_code, request.get_full_path())
+        if lang_code and lang_code != current_url_lang_prefix:
+            if prefix_is_lang:
+                # Replace current url language prefix
+                expected_url_lang_prefix = '/{0}/'.format(lang_code)                    
+                new_location = request.get_full_path().replace(
+                            '/{0}/'.format(current_url_lang_prefix), expected_url_lang_prefix)
+            else:
+                # Add url language prefix
+                new_location = '/{0}{1}'.format(lang_code, request.get_full_path())
 
-                return http.HttpResponseRedirect(new_location)
+            return http.HttpResponseRedirect(new_location)
 
     def process_response(self, request, response):
         """ Store the language in the session """
