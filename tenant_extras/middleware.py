@@ -10,6 +10,7 @@ from django.utils.importlib import import_module
 from django.middleware.locale import LocaleMiddleware as _LocaleMiddleware
 from django.utils.translation.trans_real import to_locale, DjangoTranslation
 from django.utils import translation
+from django.utils.datastructures import SortedDict
 from django.utils._os import upath
 from django.core.urlresolvers import LocaleRegexURLResolver, get_resolver
 
@@ -97,7 +98,7 @@ def tenant_translation(language, tenant_locale_path=None):
         _translations[lang] = res
         return res
 
-    default_translation = _fetch(settings.LANGUAGE_CODE)
+    default_translation = _fetch(getattr(get_tenant_properties(), 'LANGUAGE_CODE', None))
     current_translation = _fetch(language, fallback=default_translation)
 
     return current_translation
@@ -160,17 +161,14 @@ class LocaleRedirectMiddleware(object):
 
         This middleware is only relevant with i18n_patterns.
         """
-        if not isinstance(get_resolver(request.path_info), LocaleRegexURLResolver):
-            return
+        _supported_languages = SortedDict(getattr(get_tenant_properties(), 'LANGUAGES'))
+        _default_language = getattr(get_tenant_properties(), 'LANGUAGE_CODE', None)
 
-        properties = get_tenant_properties()
         url_parts = request.path.split('/')
         current_url_lang_prefix = url_parts[1]
 
-        # Is the prefix a valid language code. If it isn't then
-        # set the current_url_lang_prefix to ''
-        if not current_url_lang_prefix in dict(properties.LANGUAGES).keys():
-            current_url_lang_prefix = ''
+        valid_prefixes = dict(_supported_languages).keys() + ['', 'admin',]
+        if not current_url_lang_prefix in valid_prefixes: return
 
         try:
             authenticated = request.user.is_authenticated()
@@ -197,32 +195,32 @@ class LocaleRedirectMiddleware(object):
 
         else:
             if hasattr(request, 'session'):
-                """ Redirect to the language in the session if it is different """
+                # Redirect to the language in the session if it is different
                 lang_code = request.session['django_language']
 
             else:
-                """ Fall back to language cookie """
+                # Fall back to language cookie
                 lang_code = request.COOKIES.get(settings.LANGUAGE_COOKIE_NAME)
 
             # If language code from the session or cookie is not supported then
             # clear the value.
-            if not lang_code in dict(properties.LANGUAGES).keys():
+            if not lang_code in dict(_supported_languages).keys():
                 lang_code = ''
+
+            prefix_is_lang = (current_url_lang_prefix in dict(_supported_languages).keys())
 
             # If no language found and the request doesn't already set a
             # language code then set the default language
-            if not (lang_code or current_url_lang_prefix):
-                default_language = getattr(properties, 'LANGUAGE_CODE', None)
-                if default_language:
-                    lang_code = default_language
+            if not lang_code and not prefix_is_lang:
+                if _default_language:
+                    lang_code = _default_language
                 else:
                     lang_code = 'en'
 
             if lang_code and lang_code != current_url_lang_prefix:
-                if current_url_lang_prefix:
-                    expected_url_lang_prefix = '/{0}/'.format(lang_code)
-                    
+                if prefix_is_lang:
                     # Replace current url language prefix
+                    expected_url_lang_prefix = '/{0}/'.format(lang_code)                    
                     new_location = request.get_full_path().replace(
                                 '/{0}/'.format(current_url_lang_prefix), expected_url_lang_prefix)
                 else:
@@ -230,3 +228,15 @@ class LocaleRedirectMiddleware(object):
                     new_location = '/{0}{1}'.format(lang_code, request.get_full_path())
 
                 return http.HttpResponseRedirect(new_location)
+
+    def process_response(self, request, response):
+        """ Store the language in the session """
+
+        # if redirect then reset the language in the session/cookie
+        if response.status_code == 302:
+            if hasattr(request, 'session'):
+                request.session['django_language'] = None
+            else:
+                response.delete_cookie(settings.LANGUAGE_COOKIE_NAME)
+
+        return response

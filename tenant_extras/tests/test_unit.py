@@ -31,8 +31,14 @@ class LocaleRedirectMiddlewareTests(TestCase):
 
         self.assertEqual(result.url, '/nl/')
 
-    def test_full_path_with_anon_user(self):
+    def test_go_path_with_anon_user(self):
         request = self.rf.get('/go/projects')
         result = self.middleware.process_request(request)
 
-        self.assertEqual(result.url, '/en/go/projects')
+        self.assertIsNone(result, 'Go paths should not redirect')
+
+    def test_admin_path_with_anon_user(self):
+        request = self.rf.get('/admin')
+        result = self.middleware.process_request(request)
+
+        self.assertEqual(result.url, '/en/admin')
