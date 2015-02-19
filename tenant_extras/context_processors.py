@@ -24,8 +24,21 @@ def tenant(request):
 
 def exposed_tenant_properties(request):
     """ 
-        Dynamically populate the tenant context with exposed tenant specific properties 
-        from reef/clients/client_name/properties.py
+
+        Dynamically populate a tenant context with exposed tenant specific properties 
+        from reef/clients/client_name/properties.py. 
+
+        The context processor looks in tenant settings for the uppercased variable names that are defined in 
+        "EXPOSED_TENANT_PROPERTIES" to generate the context.
+
+        Example:
+
+        EXPOSED_TENANT_PROPERTIES = ['mixpanel', 'analytics']
+
+        This adds the value of the keys MIXPANEL and ANALYTICS from the settings file to the context. 
+
+        The values are also added to a 'settings' JSON key so a JS object can be generated from the context.
+
     """ 
     from .utils import get_tenant_properties
     from django.conf import settings
@@ -48,13 +61,14 @@ def exposed_tenant_properties(request):
             return context
 
     # Provide list of exposed arguments to create dynamic JS hooks
-    context['attrs'] = props
-
+    context['settings'] = {}
     for item in props:
         try:
             context[item.upper()] = getattr(properties, item.upper())
+            context['settings'][item.upper()] = getattr(properties, item.upper())
         except AttributeError:
             pass
 
+    context['settings'] = json.dumps(context['settings'])
     return context
 
