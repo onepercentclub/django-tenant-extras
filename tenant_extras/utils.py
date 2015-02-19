@@ -7,6 +7,7 @@ def get_tenant_properties(model_name=None):
     Returns a model class
     model_name: The model eg 'User' or 'Project'
     """
+
     properties_path = getattr(settings, 'TENANT_PROPERTIES')
 
     parts = properties_path.split('.')

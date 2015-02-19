@@ -14,7 +14,8 @@ if not settings.configured:
             'tenant_extras',
             'tenant_extras.tests'
         ],
-        TENANT_PROPERTIES = "tenant_extras.tests.properties.properties"
+        TENANT_PROPERTIES = "tenant_extras.tests.properties.properties",
+        NOSE_ARGS = ['--nocapture', '--nologcapture',]
     )
 
 from django_nose import NoseTestSuiteRunner
