@@ -1,5 +1,6 @@
 import sys
 import mock
+import json
 
 from django.http import HttpResponse
 from django.test import RequestFactory, TestCase
@@ -58,7 +59,7 @@ class ExposedTenantPropertiesContextProcessorTestCase(TestCase):
 
             context = exposed_tenant_properties(self.rf)
             self.assertEqual(context['TEST'], 'value-for-test')
-            self.assertEqual(context['attrs'], ['test'])
+            self.assertEqual(context['settings'], json.dumps({'TEST': 'value-for-test'}))
 
     def test_default_settings_property_list(self):
         with mock.patch('django.conf.settings') as settings:
@@ -69,8 +70,8 @@ class ExposedTenantPropertiesContextProcessorTestCase(TestCase):
 
             context = exposed_tenant_properties(self.rf)
             self.assertEqual(context['TEST'], 'value-for-test')
-            self.assertEqual(context['attrs'], ['test'])
-
+            self.assertEqual(context['settings'], json.dumps({'TEST': 'value-for-test'}))
+    
     def test_no_exposed_tenant_properties_setting(self):
         with mock.patch('tenant_extras.utils.get_tenant_properties') as get_tenant_properties, \
                 mock.patch('django.conf.settings', spec={}) as settings:
@@ -82,7 +83,5 @@ class ExposedTenantPropertiesContextProcessorTestCase(TestCase):
             context = exposed_tenant_properties(self.rf)
             self.assertEqual(context, {})
 
-    def test_property_defined_in_list_is_missing(self):
-        pass
 
 

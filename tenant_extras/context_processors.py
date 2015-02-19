@@ -59,7 +59,6 @@ def exposed_tenant_properties(request):
             return context
 
     # Provide list of exposed arguments to create dynamic JS hooks
-    context['attrs'] = props
     context['settings'] = {}
     for item in props:
         try:
