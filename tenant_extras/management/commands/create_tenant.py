@@ -3,7 +3,7 @@ from django.core import exceptions
 from django.core.management.base import BaseCommand
 from django.utils.encoding import force_str
 from django.utils.six.moves import input
-from bluebottle.clients.models import Client
+from tenant_schemas.utils import get_tenant_model
 from django.conf import settings
 from django.db.utils import IntegrityError
 
@@ -86,7 +86,7 @@ class Command(BaseCommand):
 
     def store_client(self, name, client_name, domain_url, schema_name):
         try:
-            client = Client.objects.create(
+            client = get_tenant_model.objects.create(
                 name=name,
                 client_name=client_name,
                 domain_url=domain_url,
