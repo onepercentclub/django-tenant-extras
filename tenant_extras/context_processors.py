@@ -4,6 +4,16 @@ from django.db import connection
 from django.conf import settings
 from .utils import get_tenant_properties
 
+def conf_settings(request):
+    """
+    Some settings we want to make available in templates.
+    """
+    context = {}
+    context['DEBUG'] = getattr(settings, 'DEBUG', False)
+    context['COMPRESS_TEMPLATES'] = getattr(settings, 'COMPRESS_TEMPLATES', False)
+
+    return context
+
 def tenant(request):
     """
     Add tenant to request context
