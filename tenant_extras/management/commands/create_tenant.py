@@ -86,7 +86,7 @@ class Command(BaseCommand):
 
     def store_client(self, name, client_name, domain_url, schema_name):
         try:
-            client = get_tenant_model.objects.create(
+            client = get_tenant_model().objects.create(
                 name=name,
                 client_name=client_name,
                 domain_url=domain_url,
