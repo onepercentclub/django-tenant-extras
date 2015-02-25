@@ -1,5 +1,7 @@
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
+from django.db import connection
+from django.contrib.sites.models import Site
 
 
 def get_tenant_properties(model_name=None):
@@ -25,3 +27,16 @@ def get_tenant_properties(model_name=None):
     except AttributeError:
         raise ImproperlyConfigured(
             "{0} needs attribute name '{1}'".format(module, properties))
+
+
+def update_tenant_site(tenant, name, domain):
+    """
+        switch to the client's schema and update the primary
+        site object
+    """
+    connection.set_tenant(tenant)
+    site, _ = Site.objects.get_or_create(pk=1)
+    site.name = name
+    site.domain = domain
+    site.save()
+    connection.set_schema_to_public()

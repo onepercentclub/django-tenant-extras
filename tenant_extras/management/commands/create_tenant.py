@@ -7,6 +7,7 @@ from tenant_schemas.utils import get_tenant_model
 from django.conf import settings
 from django.db.utils import IntegrityError
 
+from tenant_extras.utils import update_tenant_site
 
 class Command(BaseCommand):
     help = 'Create a tenant'
@@ -89,10 +90,11 @@ class Command(BaseCommand):
             client = get_tenant_model().objects.create(
                 name=name,
                 client_name=client_name,
-                domain_url=domain_url,
+                domain_url=domain_url.split(":", 1)[0],  # strip optional port
                 schema_name=schema_name
             )
             client.save()
+            update_tenant_site(client, name, domain_url)
             return client
         except exceptions.ValidationError as e:
             self.stderr.write("Error: %s" % '; '.join(e.messages))
