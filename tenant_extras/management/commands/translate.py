@@ -66,7 +66,7 @@ class Command(BaseCommand):
 
     def _translate_tenant(self, tenant, ignore_patterns=None):
         # Generate translation file for django
-        print 'Translating {}:\r\n> Making Django po files...'.format(tenant)
+        self.stdout.write('Translating {}:\r\n> Making Django po files...'.format(tenant))
 
         # Create the locale directory for tenant if not present.
         tenant_locale_dir = os.path.join(getattr(settings, 'MULTI_TENANT_DIR', None), tenant, 'locale')
@@ -90,7 +90,7 @@ class Command(BaseCommand):
         # Generate JS messages
         ignore_patterns = ignore_patterns + ['reef',]
 
-        print '> Making JS po files...'
+        self.stdout.write('> Making JS po files...')
         call_command('makepo',
             verbosity=self.verbosity,
             tenant=tenant,
@@ -105,7 +105,7 @@ class Command(BaseCommand):
 
         if self.compile:
             # Compile .po files to .mo
-            print '> Compiling po files...'
+            self.stdout.write('> Compiling po files...')
             call_command('compilepo',
                 locale=self.locale,
                 tenant=tenant)

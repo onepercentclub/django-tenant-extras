@@ -49,7 +49,7 @@ class Command(NoArgsCommand):
         self.tenant_dir = getattr(settings, 'MULTI_TENANT_DIR', None)
 
 
-        print 'Generating js files:'
+        self.stdout.write('Generating js files:')
         if self.tenant_name:
             self._render_catalog(self.tenant_name)
         else:
@@ -57,7 +57,7 @@ class Command(NoArgsCommand):
                 self._render_catalog(tenant_name)
 
     def _render_catalog(self, tenant_name):
-        print '> for {}...'.format(tenant_name)
+        self.stdout.write('> for {}...'.format(tenant_name))
 
         if self.locale is not None:
             languages = [self.locale]
@@ -71,30 +71,35 @@ class Command(NoArgsCommand):
 
         # Update the LOCALE_PATHS setting to ensure the Django get_javascript_catalog 
         # method below checks the correct directories. 
-        settings.LOCALE_PATHS += (
+        settings.LOCALE_PATHS = (
             os.path.join(self.tenant_dir, tenant_name, 'locale'),
         )
-
-        for locale in languages:
-            if self.verbosity > 0:
-                self.stdout.write("processing language %s\n" % locale)
-
-            jsfile = os.path.join(outputdir, _default_filename(locale, self.domain))
-            basedir = os.path.dirname(jsfile)
-            if not os.path.isdir(basedir):
-                os.makedirs(basedir)
-
-            tenant = get_tenant_model().objects.get(client_name=tenant_name)
-
-            connection.set_tenant(tenant)
-            activate(locale)
             
-            catalog, plural = get_javascript_catalog(locale, self.domain, self.packages)
-            response = render_javascript_catalog(catalog, plural)
+        client_cls = get_tenant_model()
 
-            with io.open(jsfile, "w", encoding="utf-8") as fp:
-                fp.write(force_text(response.content))
+        try:
+            tenant = client_cls.objects.get(client_name=tenant_name)
 
+            for locale in languages:
+                if self.verbosity > 0:
+                    self.stdout.write("processing language %s\n" % locale)
+
+                jsfile = os.path.join(outputdir, _default_filename(locale, self.domain))
+                basedir = os.path.dirname(jsfile)
+                if not os.path.isdir(basedir):
+                    os.makedirs(basedir)
+
+                connection.set_tenant(tenant)
+                activate(locale)
+                
+                catalog, plural = get_javascript_catalog(locale, self.domain, self.packages)
+                response = render_javascript_catalog(catalog, plural)
+
+                with io.open(jsfile, "w", encoding="utf-8") as fp:
+                    fp.write(force_text(response.content))
+
+        except client_cls.DoesNotExist:
+            self.stdout.write("Skipping unconfigured client: {0}".format(tenant_name))
 
 def _default_filename(locale, domain):
     from django.utils.translation.trans_real import to_language

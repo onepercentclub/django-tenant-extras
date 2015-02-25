@@ -31,7 +31,7 @@ class Command(BaseCommand):
         if self.push:
             from txclib.project import Project
 
-            print '> Pushing translations for {}...'.format(tenant)
+            self.stdout.write('> Pushing translations for {}...'.format(tenant))
             tenant_dir = os.path.join(getattr(settings, 'MULTI_TENANT_DIR', None), tenant)
             project = Project(path_to_tx=tenant_dir)
             project.push(source=True, no_interactive=True)

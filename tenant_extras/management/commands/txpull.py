@@ -55,7 +55,7 @@ class Command(BaseCommand):
             self._pull(tenant)
 
     def _pull(self, tenant):
-        print '> Pulling translations for {}...'.format(tenant)
+        self.stdout.write('> Pulling translations for {}...'.format(tenant))
 
         tenant_dir = os.path.join(getattr(settings, 'MULTI_TENANT_DIR', None), tenant)
         with temp_chdir(tenant_dir):            
