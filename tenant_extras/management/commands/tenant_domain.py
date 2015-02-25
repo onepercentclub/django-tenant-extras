@@ -7,6 +7,8 @@ from django.core.management.base import CommandError
 
 from tenant_schemas.utils import get_public_schema_name, get_tenant_model
 
+from django.db import connection
+from django.contrib.sites.models import Site
 
 class Command(BaseCommand):
     help = "Change tenant domain name."
@@ -30,7 +32,14 @@ class Command(BaseCommand):
                                 os.path.basename(sys.argv[0]), sys.argv[1]))
 
         tenant = get_tenant_model().objects.get(client_name=tenant_name)
-        tenant.domain_url = domain
+        tenant.domain_url = domain.split(":", 1)[0]  # remove port, if any
         tenant.save()
+
+        connection.set_tenant(tenant)
+        site, _ = Site.objects.get_or_create(pk=1)
+        site.name = domain
+        site.domain = domain
+        site.save()
+        connection.set_schema_to_public()
 
         self.stdout.write('Updated {0} to use {1}'.format(tenant_name, domain))
