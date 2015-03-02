@@ -15,7 +15,8 @@ if not settings.configured:
             'tenant_extras.tests'
         ],
         TENANT_PROPERTIES = "tenant_extras.tests.properties.properties",
-        NOSE_ARGS = ['--nocapture', '--nologcapture',]
+        NOSE_ARGS = ['--nocapture', '--nologcapture',],
+        ROOT_URLCONF='tenant_extras.tests.urls'
     )
 
 from django_nose import NoseTestSuiteRunner

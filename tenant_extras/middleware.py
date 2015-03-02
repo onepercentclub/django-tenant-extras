@@ -18,10 +18,17 @@ from django.db import connection
 
 from .utils import get_tenant_properties
 
+_tenants = {}
 
-_translations = {}
+def _translation(path, loc, lang):
+    try:
+        t = gettext_module.translation('django', path, [loc], DjangoTranslation)
+        t.set_language(lang)
+        return t
+    except IOError:
+        return None
 
-def tenant_translation(language, tenant_locale_path=None):
+def tenant_translation(language, tenant_name, tenant_locale_path=None):
     """
     This is taken from the Django translation utils
     https://github.com/django/django/blob/1.6.8/django/utils/translation/trans_real.py#L101-L180
@@ -29,7 +36,8 @@ def tenant_translation(language, tenant_locale_path=None):
     It has been altered to handle tenant specific locale file paths. 
     """
 
-    global _translations
+    global _tenants
+    _translations = _tenants.get(tenant_name, {})
 
     t = _translations.get(language, None)
     if t is not None:
@@ -38,24 +46,12 @@ def tenant_translation(language, tenant_locale_path=None):
     globalpath = os.path.join(os.path.dirname(upath(sys.modules[settings.__module__].__file__)), 'locale')
 
     def _fetch(lang, fallback=None):
-
-        global _translations
-
         res = _translations.get(lang, None)
         if res is not None:
             return res
 
         loc = to_locale(lang)
-
-        def _translation(path):
-            try:
-                t = gettext_module.translation('django', path, [loc], DjangoTranslation)
-                t.set_language(lang)
-                return t
-            except IOError:
-                return None
-
-        res = _translation(globalpath)
+        res = _translation(globalpath, loc, lang)
 
         # We want to ensure that, for example,  "en-gb" and "en-us" don't share
         # the same translation object (thus, merging en-us with a local update
@@ -67,7 +63,7 @@ def tenant_translation(language, tenant_locale_path=None):
             res._catalog = res._catalog.copy()
 
         def _merge(path):
-            t = _translation(path)
+            t = _translation(path, loc, lang)
             if t is not None:
                 if res is None:
                     return t
@@ -113,7 +109,7 @@ class TenantLocaleMiddleware(_LocaleMiddleware):
         check_path = self.is_language_prefix_patterns_used()
         language = translation.get_language_from_request(
             request, check_path=check_path)
-        translation._trans._active.value = tenant_translation(language, site_locale)
+        translation._trans._active.value = tenant_translation(language, tenant_name, site_locale)
         request.LANGUAGE_CODE = translation.get_language()
 
     def process_response(self, request, response):

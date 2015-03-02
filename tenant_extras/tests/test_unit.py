@@ -4,9 +4,39 @@ import json
 
 from django.http import HttpResponse
 from django.test import RequestFactory, TestCase
+from django.db import connection
+from django.test.utils import override_settings
 
-from ..middleware import LocaleRedirectMiddleware
+from ..middleware import LocaleRedirectMiddleware, TenantLocaleMiddleware
 
+@override_settings(MULTI_TENANT_DIR='/clients', INSTALLED_APPS=(), LOCALE_PATHS=())
+class TenantLocaleMiddlewareTests(TestCase):
+    def setUp(self):
+        super(TenantLocaleMiddlewareTests, self).setUp()
+
+        self.rf = RequestFactory()
+        self.middleware = TenantLocaleMiddleware()
+
+    def test_valid_tenant_locale(self):
+        with mock.patch("tenant_extras.middleware.connection") as mock_c, \
+             mock.patch("tenant_extras.middleware._translation") as mock_t, \
+             mock.patch("os.path.isdir", return_value=True):
+
+            mock_c.tenant = mock.Mock(client_name="tenant_a")
+            request = self.rf.get('/nl/')
+            result = self.middleware.process_request(request)
+
+            last_call_path = mock_t.call_args_list[-1][0][0]
+            self.assertEquals(last_call_path, '/clients/tenant_a/locale')
+
+            mock_c.tenant = mock.Mock(client_name="tenant_b")
+            request = self.rf.get('/nl/')
+            result = self.middleware.process_request(request)
+
+            last_call_path = mock_t.call_args_list[-1][0][0]
+            self.assertEquals(last_call_path, '/clients/tenant_b/locale')
+
+                    
 class LocaleRedirectMiddlewareTests(TestCase):
 
     def setUp(self):
