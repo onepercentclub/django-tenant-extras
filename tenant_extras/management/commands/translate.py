@@ -37,6 +37,7 @@ class Command(BaseCommand):
         self.verbosity = options.get('verbosity')
         self.compile = options.get('compile')
         self.locale = options.get('locale')
+        self.pocmd = options.get('pocmd')
 
         if not self.locale:
             self.locale = ['en', 'en_GB', 'nl']
