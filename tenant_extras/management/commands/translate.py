@@ -24,6 +24,8 @@ class Command(BaseCommand):
                     help='locale(s) to process (e.g. de_AT). Default is to process all. Can be used multiple times.'),
             make_option('--compile', '-c', dest='compile', action='store_true', default=False,
                     help='compile the .po to .mo files.'),
+            make_option('--pocmd', '-p', dest='pocmd', default='makepo', 
+                    help='alternative command to generate po files'),
         )
 
         super(Command, self).__init__()
@@ -35,6 +37,7 @@ class Command(BaseCommand):
         self.verbosity = options.get('verbosity')
         self.compile = options.get('compile')
         self.locale = options.get('locale')
+
         if not self.locale:
             self.locale = ['en', 'en_GB', 'nl']
 
@@ -74,7 +77,7 @@ class Command(BaseCommand):
             os.mkdir(tenant_locale_dir)
 
         # Generate po file for tenant
-        call_command('makepo',
+        call_command(self.pocmd,
             verbosity=self.verbosity,
             tenant=tenant,
             domain='django',
@@ -91,7 +94,7 @@ class Command(BaseCommand):
         ignore_patterns = ignore_patterns + ['reef',]
 
         self.stdout.write('> Making JS po files...')
-        call_command('makepo',
+        call_command(self.pocmd,
             verbosity=self.verbosity,
             tenant=tenant,
             domain='djangojs',
