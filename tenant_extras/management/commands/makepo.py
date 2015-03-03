@@ -2,6 +2,7 @@ import fnmatch
 import glob
 import os
 import sys
+import re
 from optparse import make_option
 
 import django
@@ -77,7 +78,7 @@ class Command(BaseCommand):
 
         ###
         # Added check here to handle tenant specific translations
-        if os.path.isdir(os.path.join(tenant_dir, self.tenant, 'locale')):
+        if self.tenant and tenant_dir and os.path.isdir(os.path.join(tenant_dir, self.tenant, 'locale')):
             localedir = os.path.abspath(os.path.join(tenant_dir, self.tenant, 'locale'))
         elif os.path.isdir(os.path.join('conf', 'locale')):
             localedir = os.path.abspath(os.path.join('conf', 'locale'))
@@ -140,6 +141,24 @@ class Command(BaseCommand):
                 f.process(self, potfile, self.domain, self.keep_pot)
             except UnicodeDecodeError:
                 self.stdout.write("UnicodeDecodeError: skipped file %s in %s" % (f.file, f.dirpath))
+
+        msgs, message = self._additional_msgs()
+        if msgs:
+            # If the new message doesn't exist in the pot file then it should
+            # be appended to the end.
+            with open(potfile, "r") as pot_file:
+                lines = pot_file.read()
+
+            with open(potfile, "a") as pot_file:
+                # lines = pot_file.read()
+                for msg in msgs:
+                    expr = re.compile("msgid \"{}\"".format(msg), re.M)
+                    if not expr.findall(lines):
+                        if not message:
+                            message = "Additional translation message"
+                        # pot_file.write('asdasd')
+                        pot_file.write("\n\n#: {0}\n\nmsgid \"{1}\"\n\nmsgstr \"\"".format(message, msg))
+
         return potfile
 
     def find_files(self, paths):
@@ -175,3 +194,8 @@ class Command(BaseCommand):
                     else:
                         all_files.append(TranslatableFile(dirpath, filename))
         return sorted(all_files)
+
+    # Additional data to be appended to pot file.
+    # This can include strings from the database.
+    def _additional_msgs(self):
+        return (), "Nothing to see here."
