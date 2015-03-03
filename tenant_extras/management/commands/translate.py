@@ -24,7 +24,7 @@ class Command(BaseCommand):
                     help='locale(s) to process (e.g. de_AT). Default is to process all. Can be used multiple times.'),
             make_option('--compile', '-c', dest='compile', action='store_true', default=False,
                     help='compile the .po to .mo files.'),
-            make_option('--pocmd', '-p', dest='pocmd', default='makepo', 
+            make_option('--pocmd', '-d', dest='pocmd', default='makepo', 
                     help='alternative command to generate po files'),
         )
 
