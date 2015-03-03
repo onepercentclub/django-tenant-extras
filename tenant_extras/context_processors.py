@@ -23,6 +23,7 @@ def tenant(request):
         current_tenant = connection.tenant
         properties = get_tenant_properties()
         return {
+            'MAPS_API_KEY': getattr(properties, 'MAPS_API_KEY'),
             'DONATIONS_ENABLED': getattr(properties, 'DONATIONS_ENABLED'),
             'RECURRING_DONATIONS_ENABLED': getattr(properties, 'RECURRING_DONATIONS_ENABLED'),
             'TENANT': connection,
