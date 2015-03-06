@@ -84,7 +84,10 @@ class Command(NoArgsCommand):
             if not os.path.isdir(basedir):
                 os.makedirs(basedir)
 
-            tenant = get_tenant_model().objects.get(client_name=tenant_name)
+            try:
+                tenant = get_tenant_model().objects.get(client_name=tenant_name)
+            except get_tenant_model().DoesNotExist:
+                continue
 
             connection.set_tenant(tenant)
             activate(locale)
