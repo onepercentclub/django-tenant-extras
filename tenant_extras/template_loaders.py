@@ -6,6 +6,8 @@ from django.template.loader import BaseLoader
 from django.utils._os import safe_join
 from django.db import connection
 
+from tenant_schemas.postgresql_backend.base import FakeTenant
+
 
 class FilesystemLoader(BaseLoader):
     """
@@ -21,12 +23,25 @@ class FilesystemLoader(BaseLoader):
     def get_template_sources(self, template_name, template_dirs=None):
         if not connection.tenant:
             return
+
+        elif isinstance(connection.tenant, FakeTenant):
+            if not template_dirs:
+                template_dirs = settings.TEMPLATE_DIRS
+            for template_dir in template_dirs:
+                try:
+                    yield safe_join(template_dir, template_name)
+                except UnicodeDecodeError:
+                    raise
+                except ValueError:
+                    pass
+
         if not template_dirs:
             try:
                 template_dirs = [settings.MULTI_TENANT_DIR]
             except AttributeError:
                 raise ImproperlyConfigured('To use %s.%s you must define the MULTI_TENANT_DIR' %
                                            (__name__, FilesystemLoader.__name__))
+
         for template_dir in template_dirs:
             try:
                 if '%s' in template_dir:
