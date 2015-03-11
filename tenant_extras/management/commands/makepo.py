@@ -156,7 +156,6 @@ class Command(BaseCommand):
                     if not expr.findall(lines):
                         if not message:
                             message = "Additional translation message"
-                        # pot_file.write('asdasd')
                         pot_file.write(u"\n\n#: {0}\n\nmsgid \"{1}\"\n\nmsgstr \"\"".format(message, msg).encode('utf-8'))
 
         return potfile
