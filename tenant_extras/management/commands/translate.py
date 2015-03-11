@@ -31,8 +31,8 @@ class Command(BaseCommand):
         super(Command, self).__init__()
 
     def handle(self, *args, **options):
-        default_ignore = ['*.orig', '.*', '.git', '*~', '*.pyc']
-        default_ignore += ['tests', 'static', 'build', 'node_modules', 'bower_components', 'sass', 'static', 'private']
+        default_ignore = ['*.orig', '.*', '.git', '*~', '*.pyc', '*.egg', '*.egg-info']
+        default_ignore += ['tests', 'static', 'build', 'node_modules', 'bower_components', 'sass', 'static', 'private', 'env', 'build', 'dist', ]
 
         self.verbosity = options.get('verbosity')
         self.compile = options.get('compile')

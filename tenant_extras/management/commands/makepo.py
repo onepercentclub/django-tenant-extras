@@ -152,12 +152,11 @@ class Command(BaseCommand):
             with open(potfile, "a") as pot_file:
                 # lines = pot_file.read()
                 for msg in msgs:
-                    expr = re.compile("msgid \"{}\"".format(msg), re.M)
+                    expr = re.compile(u"msgid \"{}\"".format(msg), re.M)
                     if not expr.findall(lines):
                         if not message:
                             message = "Additional translation message"
-                        # pot_file.write('asdasd')
-                        pot_file.write("\n\n#: {0}\n\nmsgid \"{1}\"\n\nmsgstr \"\"".format(message, msg))
+                        pot_file.write(u"\n\n#: {0}\n\nmsgid \"{1}\"\n\nmsgstr \"\"".format(message, msg).encode('utf-8'))
 
         return potfile
 
