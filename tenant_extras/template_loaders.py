@@ -7,6 +7,52 @@ from django.utils._os import safe_join
 from django.db import connection
 
 from tenant_schemas.postgresql_backend.base import FakeTenant
+from tenant_schemas.template_loaders import CachedLoader as BaseCachedLoader
+
+
+class CachedLoader(BaseCachedLoader):
+    """
+    This is a copy of the Tenant Schemas CachedLoader with load_template
+    altered to handle a FakeTenant, eg the tenant not being set on the 
+    connection due an error early in the server load process.
+    """
+
+    def load_template(self, template_name, template_dirs=None):
+        if connection.tenant:
+            try:
+                key = '-'.join([str(connection.tenant.pk), template_name])
+            except AttributeError:
+                # Tenant not found so use standard key and template_dirs
+                key = template_name
+                if not template_dirs:
+                    template_dirs = settings.TEMPLATE_DIRS
+        else:
+            key = template_name
+        if template_dirs:
+            # If template directories were specified, use a hash to
+            # differentiate
+            if connection.tenant:
+                try:
+                    key = '-'.join([str(connection.tenant.pk), template_name,
+                                hashlib.sha1(force_bytes('|'.join(template_dirs))).hexdigest()])
+                except AttributeError:
+                    key = '-'.join([template_name, hashlib.sha1(force_bytes('|'.join(template_dirs))).hexdigest()])
+            else:
+                key = '-'.join([template_name, hashlib.sha1(force_bytes('|'.join(template_dirs))).hexdigest()])
+
+        if key not in self.template_cache:
+            template, origin = self.find_template(template_name, template_dirs)
+            if not hasattr(template, 'render'):
+                try:
+                    template = get_template_from_string(template, origin, template_name)
+                except TemplateDoesNotExist:
+                    # If compiling the template we found raises TemplateDoesNotExist,
+                    # back off to returning the source and display name for the template
+                    # we were asked to load. This allows for correct identification (later)
+                    # of the actual template that does not exist.
+                    return template, origin
+            self.template_cache[key] = template
+        return self.template_cache[key], None
 
 
 class FilesystemLoader(BaseLoader):
@@ -24,6 +70,9 @@ class FilesystemLoader(BaseLoader):
         if not connection.tenant:
             return
 
+        # We can get here when the app errors before the tenant can
+        # be set on the connection, eg on 400 errors due to DEBUG = False
+        # and ALLOWED_HOSTS hasn't been correctly set.
         elif isinstance(connection.tenant, FakeTenant):
             if not template_dirs:
                 template_dirs = settings.TEMPLATE_DIRS
@@ -34,6 +83,7 @@ class FilesystemLoader(BaseLoader):
                     raise
                 except ValueError:
                     pass
+            return
 
         if not template_dirs:
             try:
