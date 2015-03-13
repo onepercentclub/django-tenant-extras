@@ -86,7 +86,7 @@ class Command(BaseCommand):
             no_wrap=True,
             no_obsolete=True,
             keep_pot=False,
-            extensions=['html', 'py', 'hbs'],
+            extensions=['html', 'py', 'hbs', 'txt'],
             ignore_patterns=ignore_patterns,
             include_paths=[self.bb_location],
             locale=self.locale,)
