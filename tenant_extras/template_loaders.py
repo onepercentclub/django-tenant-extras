@@ -1,4 +1,6 @@
 import hashlib
+
+from django.utils.encoding import force_bytes
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.template.base import TemplateDoesNotExist
