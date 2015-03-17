@@ -9,6 +9,6 @@ def serve(request, path, document_root=None, show_indexes=False):
     """
     tpath = path.lstrip("/")
     if tpath.startswith("cache/") and connection.tenant:
-        path = os.path.join('/' + connection.tenant.name, tpath)
+        path = os.path.join('/' + connection.tenant.schema_name, tpath)
 
     return base_serve(request, path, document_root, show_indexes)
