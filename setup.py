@@ -21,6 +21,7 @@ setup(
     install_requires=[
         'Django >= 1.6.8,<1.7',
         'django-tenant-schemas >= 1.5.0',
+        'sorl-thumbnail==11.12'
     ],
     tests_require={
         'django-nose==1.3',
