@@ -14,7 +14,7 @@ if not settings.configured:
             'tenant_extras',
             'tenant_extras.tests'
         ],
-        TENANT_PROPERTIES = "tenant_extras.tests.properties.properties",
+        TENANT_PROPERTIES = "tenant_extras.tests.properties.properties1",
         NOSE_ARGS = ['--nocapture', '--nologcapture',],
         ROOT_URLCONF='tenant_extras.tests.urls'
     )

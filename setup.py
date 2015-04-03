@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import os
 from setuptools import setup
 import tenant_extras
@@ -24,6 +25,7 @@ setup(
         'sorl-thumbnail==11.12'
     ],
     tests_require={
+        'bunch==1.0.1',
         'django-nose==1.3',
         'django-setuptest==0.1.4',
         'mock==1.0.1'

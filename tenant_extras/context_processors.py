@@ -58,12 +58,12 @@ def tenant_properties(request):
         current_tenant = connection.tenant
         properties = get_tenant_properties()
         context['settings'] =  {
-            'mapsApiKey': getattr(properties, 'MAPS_API_KEY'),
-            'donationsEnabled': getattr(properties, 'DONATIONS_ENABLED'),
-            'recurringDonationsEnabled': getattr(properties, 'RECURRING_DONATIONS_ENABLED'),
+            'mapsApiKey': getattr(properties, 'MAPS_API_KEY', ''),
+            'donationsEnabled': getattr(properties, 'DONATIONS_ENABLED', True),
+            'recurringDonationsEnabled': getattr(properties, 'RECURRING_DONATIONS_ENABLED', False),
             'siteName': current_tenant.name,
-            'tenantLanguage': '{0}{1}'.format(current_tenant.client_name, getattr(properties, 'LANGUAGE_CODE')),
-            'languageCode': '{0}{1}'.format(current_tenant.client_name, request.LANGUAGE_CODE),
+            'tenantLanguage': '{0}{1}'.format(current_tenant.client_name, getattr(properties, 'LANGUAGE_CODE', '')),
+            'languageCode': '{0}{1}'.format(current_tenant.client_name, getattr(request, 'LANGUAGE_CODE', '')),
             'languages': [{'code': lang[0], 'name': lang[1]} for lang in getattr(properties, 'LANGUAGES')]
          }
     else:

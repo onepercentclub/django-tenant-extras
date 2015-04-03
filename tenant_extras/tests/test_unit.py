@@ -2,10 +2,13 @@ import sys
 import mock
 import json
 
+from bunch import bunchify
+
 from django.http import HttpResponse
 from django.test import RequestFactory, TestCase
-from django.db import connection
 from django.test.utils import override_settings
+from django.db.backends.sqlite3.base import DatabaseWrapper
+
 
 from ..middleware import LocaleRedirectMiddleware, TenantLocaleMiddleware
 
@@ -75,43 +78,37 @@ class LocaleRedirectMiddlewareTests(TestCase):
         self.assertEqual(result.url, '/en/admin')
 
 
-class ExposedTenantPropertiesContextProcessorTestCase(TestCase):
+@mock.patch('django.db.connection', bunchify({'tenant': {'name': 'My Test', 'client_name': 'test'}}))
+class TenantPropertiesContextProcessorTestCase(TestCase):
 
     def setUp(self):
         self.rf = RequestFactory()
 
-    def test_tenant_specific_property_list(self):
-        with mock.patch('tenant_extras.utils.get_tenant_properties') as get_tenant_properties:
-            from ..context_processors import exposed_tenant_properties
-
-            get_tenant_properties().EXPOSED_TENANT_PROPERTIES = ['test']
-            get_tenant_properties().TEST = 'value-for-test'
-
-            context = exposed_tenant_properties(self.rf)
-            self.assertEqual(context['TEST'], 'value-for-test')
-            self.assertEqual(context['settings'], json.dumps({'TEST': 'value-for-test'}))
-
+    @override_settings(EXPOSED_TENANT_PROPERTIES=['test'], TEST='value-for-test')
     def test_default_settings_property_list(self):
-        with mock.patch('django.conf.settings') as settings:
-            from ..context_processors import exposed_tenant_properties
-
-            settings.EXPOSED_TENANT_PROPERTIES = ['test']
-            settings.TEST = 'value-for-test'
-
-            context = exposed_tenant_properties(self.rf)
-            self.assertEqual(context['TEST'], 'value-for-test')
-            self.assertEqual(context['settings'], json.dumps({'TEST': 'value-for-test'}))
+        from ..context_processors import tenant_properties
+        context = tenant_properties(self.rf)
+        self.assertEqual(context['TEST'], 'value-for-test')
+        # Check that the added value is in the context
+        self.assertIn('"TEST": "value-for-test"', str(context['settings']))
     
+    @override_settings(EXPOSED_TENANT_PROPERTIES=['test'], TEST='value-for-test',
+                       TENANT_PROPERTIES="tenant_extras.tests.properties.properties2")
+    def test_tenant_specific_property_list(self):
+        from ..context_processors import tenant_properties
+
+        # Check that Tenant test-value specified in properties2 is used.
+        context = tenant_properties(self.rf)
+        self.assertEqual(context['TEST'], 'my-very-own-test-value')
+        self.assertIn('"TEST": "my-very-own-test-value"', context['settings'])
+
     def test_no_exposed_tenant_properties_setting(self):
         with mock.patch('tenant_extras.utils.get_tenant_properties') as get_tenant_properties, \
                 mock.patch('django.conf.settings', spec={}) as settings:
             
-            from ..context_processors import exposed_tenant_properties
+            from ..context_processors import tenant_properties
             
             get_tenant_properties.return_value = {}
 
-            context = exposed_tenant_properties(self.rf)
+            context = tenant_properties(self.rf)
             self.assertEqual(context, {})
-
-
-
