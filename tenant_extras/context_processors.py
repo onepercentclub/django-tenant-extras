@@ -14,26 +14,8 @@ def conf_settings(request):
 
     return context
 
-def tenant(request):
-    """
-    Add tenant to request context
-    """
 
-    if connection.tenant:
-        current_tenant = connection.tenant
-        properties = get_tenant_properties()
-        return {
-            'MAPS_API_KEY': getattr(properties, 'MAPS_API_KEY'),
-            'DONATIONS_ENABLED': getattr(properties, 'DONATIONS_ENABLED'),
-            'RECURRING_DONATIONS_ENABLED': getattr(properties, 'RECURRING_DONATIONS_ENABLED'),
-            'TENANT': connection,
-            'TENANT_LANGUAGE': '{0}{1}'.format(current_tenant.client_name, request.LANGUAGE_CODE),
-            'LANGUAGES': json.dumps([{'code': lang[0], 'name': lang[1]} for lang in getattr(properties, 'LANGUAGES')])
-         }
-    return {}
-
-
-def exposed_tenant_properties(request):
+def tenant_properties(request):
     """ 
 
         Dynamically populate a tenant context with exposed tenant specific properties 
@@ -71,8 +53,23 @@ def exposed_tenant_properties(request):
         except AttributeError:
             return context
 
-    # Provide list of exposed arguments to create dynamic JS hooks
-    context['settings'] = {}
+    # First load tenant settings that should always be exposed
+    if connection.tenant:
+        current_tenant = connection.tenant
+        properties = get_tenant_properties()
+        context['settings'] =  {
+            'mapsApiKey': getattr(properties, 'MAPS_API_KEY'),
+            'donationsEnabled': getattr(properties, 'DONATIONS_ENABLED'),
+            'recurringDonationsEnabled': getattr(properties, 'RECURRING_DONATIONS_ENABLED'),
+            'siteName': current_tenant.name,
+            'tenantLanguage': '{0}{1}'.format(current_tenant.client_name, getattr(properties, 'LANGUAGE_CODE')),
+            'languageCode': '{0}{1}'.format(current_tenant.client_name, request.LANGUAGE_CODE),
+            'languages': [{'code': lang[0], 'name': lang[1]} for lang in getattr(properties, 'LANGUAGES')]
+         }
+    else:
+        context['settings'] = {}
+
+    # Now load the tenant specific properties
     for item in props:
         try:
             context[item.upper()] = getattr(properties, item.upper())
