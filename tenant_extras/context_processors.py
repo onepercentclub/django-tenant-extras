@@ -12,6 +12,9 @@ def conf_settings(request):
     context['DEBUG'] = getattr(settings, 'DEBUG', False)
     context['COMPRESS_TEMPLATES'] = getattr(settings, 'COMPRESS_TEMPLATES', False)
 
+    # TENANT_LANGUAGE is used to create a unique cache key
+    content['TENANT_LANGUAGE'] = '{0}{1}'.format(current_tenant.client_name, request.LANGUAGE_CODE)
+
     return context
 
 
@@ -62,8 +65,7 @@ def tenant_properties(request):
             'donationsEnabled': getattr(properties, 'DONATIONS_ENABLED', True),
             'recurringDonationsEnabled': getattr(properties, 'RECURRING_DONATIONS_ENABLED', False),
             'siteName': current_tenant.name,
-            'tenantLanguage': '{0}{1}'.format(current_tenant.client_name, getattr(properties, 'LANGUAGE_CODE', '')),
-            'languageCode': '{0}{1}'.format(current_tenant.client_name, getattr(request, 'LANGUAGE_CODE', '')),
+            'languageCode': getattr(request, 'LANGUAGE_CODE', ''),
             'languages': [{'code': lang[0], 'name': lang[1]} for lang in getattr(properties, 'LANGUAGES')]
          }
     else:
