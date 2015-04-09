@@ -13,7 +13,7 @@ def conf_settings(request):
     context['COMPRESS_TEMPLATES'] = getattr(settings, 'COMPRESS_TEMPLATES', False)
 
     # TENANT_LANGUAGE is used to create a unique cache key
-    content['TENANT_LANGUAGE'] = '{0}{1}'.format(connection.tenant.client_name, request.LANGUAGE_CODE)
+    context['TENANT_LANGUAGE'] = '{0}{1}'.format(connection.tenant.client_name, request.LANGUAGE_CODE)
 
     return context
 
