@@ -79,6 +79,22 @@ class LocaleRedirectMiddlewareTests(TestCase):
 
 
 @mock.patch('django.db.connection', bunchify({'tenant': {'name': 'My Test', 'client_name': 'test'}}))
+class ConfContextProcessorTestCase(TestCase):
+
+    def setUp(self):
+        self.rf = RequestFactory()
+        self.rf.LANGUAGE_CODE = 'nl'
+
+    def test_default_settings_property_list(self):
+        from ..context_processors import conf_settings
+        context = conf_settings(self.rf)
+
+        self.assertEqual(context['DEBUG'], False)
+        self.assertEqual(context['TENANT_LANGUAGE'], 'testnl')
+        self.assertEqual(context['COMPRESS_TEMPLATES'], False)
+    
+
+@mock.patch('django.db.connection', bunchify({'tenant': {'name': 'My Test', 'client_name': 'test'}}))
 class TenantPropertiesContextProcessorTestCase(TestCase):
 
     def setUp(self):
