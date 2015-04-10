@@ -14,7 +14,6 @@ def conf_settings(request):
 
     # TENANT_LANGUAGE is used to create a unique cache key
     context['TENANT_LANGUAGE'] = '{0}{1}'.format(connection.tenant.client_name, request.LANGUAGE_CODE)
-
     return context
 
 
@@ -64,6 +63,8 @@ def tenant_properties(request):
             'mapsApiKey': getattr(properties, 'MAPS_API_KEY', ''),
             'donationsEnabled': getattr(properties, 'DONATIONS_ENABLED', True),
             'recurringDonationsEnabled': getattr(properties, 'RECURRING_DONATIONS_ENABLED', False),
+            'projectCreateTypes': getattr(properties, 'PROJECT_CREATE_TYPES', ['sourcing', 'funding']),
+            'projectCreateFlow': getattr(properties, 'PROJECT_CREATE_FLOW', 'combined'),
             'siteName': current_tenant.name,
             'languageCode': getattr(request, 'LANGUAGE_CODE', ''),
             'languages': [{'code': lang[0], 'name': lang[1]} for lang in getattr(properties, 'LANGUAGES')]
