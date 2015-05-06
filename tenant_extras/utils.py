@@ -1,7 +1,12 @@
+import os
+
+from contextlib import contextmanager
+
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.db import connection
 from django.contrib.sites.models import Site
+from django.utils import translation
 
 
 def get_tenant_properties(model_name=None):
@@ -40,3 +45,25 @@ def update_tenant_site(tenant, name, domain):
     site.domain = domain
     site.save()
     connection.set_schema_to_public()
+
+
+@contextmanager
+def tenant_language(language):
+    """Context manager that changes the current translation language for
+    all code inside the following block to the correct tenant specific language
+    """
+    from .middleware import tenant_translation
+
+    if language:
+        prev = translation.get_language()
+
+        site_locale = os.path.join(settings.MULTI_TENANT_DIR, tenant_name, 'locale')
+        tenant_name = connection.tenant.client_name
+        translation._trans._active.value = tenant_translation(language, tenant_name, site_locale)
+
+        try:
+            yield
+        finally:
+            translation.activate(prev)
+    else:
+        yield
