@@ -1,7 +1,12 @@
+import os
+
+from contextlib import contextmanager
+
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.db import connection
 from django.contrib.sites.models import Site
+from django.utils import translation
 
 
 def get_tenant_properties(model_name=None):
@@ -40,3 +45,24 @@ def update_tenant_site(tenant, name, domain):
     site.domain = domain
     site.save()
     connection.set_schema_to_public()
+
+
+class TenantLanguage():
+
+    def __init__(self, language):
+        self.language = language
+        self.prev = translation.get_language()
+
+    def __enter__(self):
+        from .middleware import tenant_translation
+
+        tenant_name = connection.tenant.client_name
+        site_locale = os.path.join(settings.MULTI_TENANT_DIR, tenant_name, 'locale')
+        tenant_name = connection.tenant.client_name
+
+        translation._trans._active.value = tenant_translation(self.language, tenant_name, site_locale)
+
+        return True
+
+    def __exit__(self, type, value, traceback):
+        translation.activate(self.prev)
