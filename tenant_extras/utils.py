@@ -59,31 +59,10 @@ class TenantLanguage():
         tenant_name = connection.tenant.client_name
         site_locale = os.path.join(settings.MULTI_TENANT_DIR, tenant_name, 'locale')
         tenant_name = connection.tenant.client_name
-        
+
         translation._trans._active.value = tenant_translation(self.language, tenant_name, site_locale)
 
         return True
 
     def __exit__(self, type, value, traceback):
         translation.activate(self.prev)
-
-
-# @contextmanager
-# def tenant_language(language):
-#     """Context manager that changes the current translation language for
-#     all code inside the following block to the correct tenant specific language
-#     """
-
-#     if language:
-#         prev = translation.get_language()
-
-#         site_locale = os.path.join(settings.MULTI_TENANT_DIR, tenant_name, 'locale')
-#         tenant_name = connection.tenant.client_name
-#         translation._trans._active.value = tenant_translation(language, tenant_name, site_locale)
-
-#         try:
-#             yield
-#         finally:
-#             translation.activate(prev)
-#     else:
-#         yield
