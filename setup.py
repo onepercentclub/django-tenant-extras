@@ -1,6 +1,6 @@
 #!/usr/bin/python
 import os
-from setuptools import setup
+from setuptools import setup, find_packages
 import tenant_extras
 
 with open(os.path.join(os.path.dirname(__file__), 'README.md')) as readme:
@@ -11,7 +11,7 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 setup(
     name="django-tenant-extras",
     version=tenant_extras.__version__,
-    packages=['tenant_extras'],
+    packages=find_packages(),
     include_package_data=True,
     license='None',
     description='A small package for extra utils for tenant schemas',
