@@ -2,6 +2,8 @@ import sys
 import mock
 import json
 
+from collections import namedtuple
+
 from bunch import bunchify
 
 from django.http import HttpResponse
@@ -128,3 +130,43 @@ class TenantPropertiesContextProcessorTestCase(TestCase):
 
             context = tenant_properties(self.rf)
             self.assertEqual(context, {})
+
+from ..drf_permissions import TenantConditionalOpenClose
+
+class TestDRFTenantPermission(TestCase):
+    """
+        Verify the permission that can enable/disable API access based on a
+        tenant property
+    """
+
+    auth_user = mock.Mock(**{"user.is_authenticated.return_value":True})
+    unauth_user = mock.Mock(**{"user.is_authenticated.return_value":False})
+
+    def test_missing_setting(self):
+        """ No tenant property at all - default to public """
+        with mock.patch('tenant_extras.drf_permissions.get_tenant_properties') as get_tenant_properties:
+            get_tenant_properties.return_value = object()
+
+            self.failUnless(TenantConditionalOpenClose().has_permission(self.unauth_user, None))
+
+    def test_api_open(self):
+        """ There is a tenant property and it's open """
+        with mock.patch('tenant_extras.drf_permissions.get_tenant_properties') as get_tenant_properties:
+            get_tenant_properties.return_value = namedtuple('props', ['API_CLOSED'])(False)
+
+            self.failUnless(TenantConditionalOpenClose().has_permission(self.unauth_user, None))
+
+    def test_api_closed_unauth(self):
+        """ There is a tenant property and it's closed, user is not authenticated """
+        with mock.patch('tenant_extras.drf_permissions.get_tenant_properties') as get_tenant_properties:
+            get_tenant_properties.return_value = namedtuple('props', ['API_CLOSED'])(True)
+
+
+            self.failIf(TenantConditionalOpenClose().has_permission(self.unauth_user, None))
+
+    def test_api_closed_auth(self):
+        """ There is a tenant property and it's closed, user IS authenticated """
+        with mock.patch('tenant_extras.drf_permissions.get_tenant_properties') as get_tenant_properties:
+            get_tenant_properties.return_value = namedtuple('props', ['API_CLOSED'])(True)
+
+            self.failUnless(TenantConditionalOpenClose().has_permission(self.auth_user, None))
