@@ -29,7 +29,7 @@ setup(
         'django-nose==1.3',
         'django-setuptest==0.1.4',
         'mock==1.0.1',
-        'djangorestframework==2.3.14'
+        'djangorestframework >= 2.3.14,<3.0'
     },
     test_suite = "tenant_extras.runtests.runtests",
     classifiers=[
