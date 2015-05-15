@@ -20,7 +20,7 @@ setup(
     author="1%Club Developers",
     author_email="devteam@onepercentclub.com",
     install_requires=[
-        'Django >= 1.6.8,<1.7',
+        'Django <= 1.6.8',
         'django-tenant-schemas >= 1.5.0',
         'sorl-thumbnail==11.12'
     ],
