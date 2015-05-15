@@ -9,7 +9,7 @@ class TenantConditionalOpenClose(BasePermission):
 
     def has_permission(self, request, view):
         try:
-            if get_tenant_properties().API_CLOSED:
+            if get_tenant_properties().CLOSED_SITE:
                 return request.user and request.user.is_authenticated()
         except AttributeError:
             pass
