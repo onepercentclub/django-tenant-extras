@@ -1,5 +1,6 @@
 import os
 import re
+import shutil
 import sys
 import subprocess
 import StringIO
@@ -62,3 +63,9 @@ class Command(BaseCommand):
             # Pull latest translations from Transifex
             project = Project(tenant_dir)
             project.pull(fetchsource=False, force=True, overwrite=True, fetchall=True)
+
+            # Move en_GB to en
+            self.stdout.write('--> Move en_GB to en directory for {}...'.format(tenant))
+            if os.path.isdir('locale/en'):
+                shutil.rmtree('locale/en')
+            os.rename('locale/en_GB', 'locale/en')
