@@ -9,10 +9,9 @@ from django.contrib.sites.models import Site
 from django.utils import translation
 
 
-def get_tenant_properties(model_name=None):
+def get_tenant_properties(property=None):
     """
-    Returns a model class
-    model_name: The model eg 'User' or 'Project'
+    Returns a tenant property, or all if none specified.
     """
 
     properties_path = getattr(settings, 'TENANT_PROPERTIES')
@@ -28,7 +27,10 @@ def get_tenant_properties(model_name=None):
             "Could not find module '{1}'".format(module))
 
     try:
+        if property:
+            return getattr(getattr(m, properties), property)
         return getattr(m, properties)
+
     except AttributeError:
         raise ImproperlyConfigured(
             "{0} needs attribute name '{1}'".format(module, properties))
