@@ -1,20 +1,16 @@
-import sys
 import mock
-import json
-
-from collections import namedtuple
 
 from bunch import bunchify
 
-from django.http import HttpResponse
 from django.test import RequestFactory, TestCase
 from django.test.utils import override_settings
-from django.db.backends.sqlite3.base import DatabaseWrapper
+from django.core.exceptions import ImproperlyConfigured
 
 
 from ..middleware import LocaleRedirectMiddleware, TenantLocaleMiddleware
 
-@override_settings(MULTI_TENANT_DIR='/clients', INSTALLED_APPS=(), LOCALE_PATHS=())
+@override_settings(MULTI_TENANT_DIR='/clients', INSTALLED_APPS=(),
+                   LOCALE_PATHS=())
 class TenantLocaleMiddlewareTests(TestCase):
     def setUp(self):
         super(TenantLocaleMiddlewareTests, self).setUp()
@@ -41,7 +37,7 @@ class TenantLocaleMiddlewareTests(TestCase):
             last_call_path = mock_t.call_args_list[-1][0][0]
             self.assertEquals(last_call_path, '/clients/tenant_b/locale')
 
-                    
+
 class LocaleRedirectMiddlewareTests(TestCase):
 
     def setUp(self):
@@ -58,7 +54,8 @@ class LocaleRedirectMiddlewareTests(TestCase):
         request = self.rf.get('/nl/')
         result = self.middleware.process_request(request)
 
-        self.assertIsNone(result, 'Should not alter the request if language set in url')
+        self.assertIsNone(result,
+                   'Should not alter the request if language set in url')
 
     def test_cookie_with_anon_user(self):
         request = self.rf.get('/en/')
@@ -80,7 +77,8 @@ class LocaleRedirectMiddlewareTests(TestCase):
         self.assertEqual(result.url, '/en/admin')
 
 
-@mock.patch('django.db.connection', bunchify({'tenant': {'name': 'My Test', 'client_name': 'test'}}))
+@mock.patch('django.db.connection',
+            bunchify({'tenant': {'name': 'My Test', 'client_name': 'test'}}))
 class ConfContextProcessorTestCase(TestCase):
 
     def setUp(self):
@@ -94,23 +92,26 @@ class ConfContextProcessorTestCase(TestCase):
         self.assertEqual(context['DEBUG'], False)
         self.assertEqual(context['TENANT_LANGUAGE'], 'testnl')
         self.assertEqual(context['COMPRESS_TEMPLATES'], False)
-    
 
-@mock.patch('django.db.connection', bunchify({'tenant': {'name': 'My Test', 'client_name': 'test'}}))
+
+@mock.patch('django.db.connection',
+            bunchify({'tenant': {'name': 'My Test', 'client_name': 'test'}}))
 class TenantPropertiesContextProcessorTestCase(TestCase):
 
     def setUp(self):
         self.rf = RequestFactory()
 
-    @override_settings(EXPOSED_TENANT_PROPERTIES=['test'], TEST='value-for-test')
+    @override_settings(EXPOSED_TENANT_PROPERTIES=['test'],
+                       TEST='value-for-test')
     def test_default_settings_property_list(self):
         from ..context_processors import tenant_properties
         context = tenant_properties(self.rf)
         self.assertEqual(context['TEST'], 'value-for-test')
         # Check that the added value is in the context
         self.assertIn('"TEST": "value-for-test"', str(context['settings']))
-    
-    @override_settings(EXPOSED_TENANT_PROPERTIES=['test'], TEST='value-for-test',
+
+    @override_settings(EXPOSED_TENANT_PROPERTIES=['test'],
+                       TEST='value-for-test',
                        TENANT_PROPERTIES="tenant_extras.tests.properties.properties2")
     def test_tenant_specific_property_list(self):
         from ..context_processors import tenant_properties
@@ -123,9 +124,9 @@ class TenantPropertiesContextProcessorTestCase(TestCase):
     def test_no_exposed_tenant_properties_setting(self):
         with mock.patch('tenant_extras.utils.get_tenant_properties') as get_tenant_properties, \
                 mock.patch('django.conf.settings', spec={}) as settings:
-            
+
             from ..context_processors import tenant_properties
-            
+
             get_tenant_properties.return_value = {}
 
             context = tenant_properties(self.rf)
@@ -169,3 +170,49 @@ class TestDRFTenantPermission(TestCase):
             get_tenant_properties.return_value = True
 
             self.failUnless(TenantConditionalOpenClose().has_permission(self.auth_user, None))
+
+
+class TestGetTenantProperties(TestCase):
+    @override_settings(TENANT_PROPERTIES="foobar.ponies.properties")
+    def test_module_import(self):
+        from tenant_extras.utils import get_tenant_properties
+
+        with self.assertRaises(ImproperlyConfigured) as e:
+            get_tenant_properties()
+
+        self.assertEquals(str(e.exception), "Could not find module 'foobar.ponies'")
+
+    @override_settings(TENANT_PROPERTIES="tenant_extras.tests.properties.properties3")
+    def test_missing_properties(self):
+        from tenant_extras.utils import get_tenant_properties
+
+        with self.assertRaises(ImproperlyConfigured) as e:
+            get_tenant_properties()
+
+        self.assertEquals(str(e.exception),
+                          "tenant_extras.tests.properties needs attribute name 'properties3'")
+
+    @override_settings(TENANT_PROPERTIES="tenant_extras.tests.properties.properties2")
+    def test_missing_property(self):
+        from tenant_extras.utils import get_tenant_properties
+
+        with self.assertRaises(ImproperlyConfigured) as e:
+            get_tenant_properties('NOT_DEFINED')
+
+        self.assertEquals(str(e.exception),
+                          "Missing / undefined property 'NOT_DEFINED'")
+
+    @override_settings(TENANT_PROPERTIES="tenant_extras.tests.properties.properties2")
+    @mock.patch("tenant_extras.tests.properties.properties2")
+    def test_property_found(self, props):
+        from tenant_extras.utils import get_tenant_properties
+
+        props.I_AM_DEFINED = 42
+        self.assertEquals(get_tenant_properties('I_AM_DEFINED'), 42)
+
+    @override_settings(TENANT_PROPERTIES="tenant_extras.tests.properties.properties2")
+    @mock.patch("tenant_extras.tests.properties.properties2")
+    def test_default(self, props):
+        from tenant_extras.utils import get_tenant_properties
+
+        self.assertEquals(get_tenant_properties(), props)
