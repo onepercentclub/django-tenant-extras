@@ -209,3 +209,10 @@ class TestGetTenantProperties(TestCase):
 
         props.I_AM_DEFINED = 42
         self.assertEquals(get_tenant_properties('I_AM_DEFINED'), 42)
+
+    @override_settings(TENANT_PROPERTIES="tenant_extras.tests.properties.properties2")
+    @mock.patch("tenant_extras.tests.properties.properties2")
+    def test_default(self, props):
+        from tenant_extras.utils import get_tenant_properties
+
+        self.assertEquals(get_tenant_properties(), props)
