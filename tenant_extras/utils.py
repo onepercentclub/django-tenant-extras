@@ -24,17 +24,22 @@ def get_tenant_properties(property=None):
         m = __import__(module, fromlist=[''])
     except ImportError:
         raise ImproperlyConfigured(
-            "Could not find module '{1}'".format(module))
+            "Could not find module '{0}'".format(module))
 
     try:
-        if property:
-            return getattr(getattr(m, properties), property)
-        return getattr(m, properties)
-
+        props = getattr(m, properties)
     except AttributeError:
         raise ImproperlyConfigured(
             "{0} needs attribute name '{1}'".format(module, properties))
 
+    try:
+        if property:
+            return getattr(props, property)
+    except AttributeError:
+        raise ImproperlyConfigured(
+            "Missing / undefined property '{0}'".format(property))
+
+    return props
 
 def update_tenant_site(tenant, name, domain):
     """
