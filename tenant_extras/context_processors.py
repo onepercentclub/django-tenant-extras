@@ -14,6 +14,7 @@ def conf_settings(request):
 
     # TENANT_LANGUAGE is used to create a unique cache key
     context['TENANT_LANGUAGE'] = '{0}{1}'.format(connection.tenant.client_name, request.LANGUAGE_CODE)
+    context['TENANT_NAME'] = connection.tenant.client_name
 
     return context
 
