@@ -1,6 +1,7 @@
 "This is locale middleware on top of Django's default LocaleMiddleware."
 import os
 import sys
+import copy
 
 import gettext as gettext_module
 
@@ -23,6 +24,9 @@ _tenants = {}
 def _translation(path, loc, lang):
     try:
         t = gettext_module.translation('django', path, [loc], DjangoTranslation)
+        # gettext will not give us a deep copy. This means _merge() will update
+        # the original, global translation object.
+        t = copy.deepcopy(t)
         t.set_language(lang)
         return t
     except IOError:
@@ -37,7 +41,10 @@ def tenant_translation(language, tenant_name, tenant_locale_path=None):
     """
 
     global _tenants
-    _translations = _tenants.get(tenant_name, {})
+    if tenant_name not in _tenants:
+        _tenants[tenant_name] = {}
+
+    _translations = _tenants[tenant_name]
 
     t = _translations.get(language, None)
     if t is not None:
