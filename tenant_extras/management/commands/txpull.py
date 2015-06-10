@@ -33,6 +33,8 @@ class Command(BaseCommand):
                 default=False, help='Pull translation messages for all tenants.'),
             make_option('--tenant', '-t', dest='tenant', default=None,
                 help='Pull translation messages for tenant.'),
+            make_option('--deploy', '-d', dest='deploy', default=False, action='store_true',
+                help='Deploy will rename the \'en_GB\' locale to \'en\'.'),
         )
 
         super(Command, self).__init__()
@@ -40,6 +42,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         process_all = options.get('all')
         tenant = options.get('tenant')
+        deploy = options.get('deploy')
 
         if tenant is not None and process_all:
             raise CommandError("The --tenant option can't be used for --all.")
@@ -51,11 +54,11 @@ class Command(BaseCommand):
         if process_all:
             tenant_dir = getattr(settings, 'MULTI_TENANT_DIR', None)
             for tenant in [f for f in os.listdir(tenant_dir) if os.path.isdir(os.path.join(tenant_dir, f))]:
-                self._pull(tenant)
+                self._pull(tenant, deploy)
         else:
-            self._pull(tenant)
+            self._pull(tenant, deploy)
 
-    def _pull(self, tenant):
+    def _pull(self, tenant, deploy):
         self.stdout.write('> Pulling translations for {}...'.format(tenant))
 
         tenant_dir = os.path.join(getattr(settings, 'MULTI_TENANT_DIR', None), tenant)
@@ -65,7 +68,8 @@ class Command(BaseCommand):
             project.pull(fetchsource=False, force=True, overwrite=True, fetchall=True)
 
             # Move en_GB to en
-            self.stdout.write('--> Move en_GB to en directory for {}...'.format(tenant))
-            if os.path.isdir('locale/en'):
-                shutil.rmtree('locale/en')
-            os.rename('locale/en_GB', 'locale/en')
+            if deploy:
+                self.stdout.write('--> Move en_GB to en directory for {}...'.format(tenant))
+                if os.path.isdir('locale/en'):
+                    shutil.rmtree('locale/en')
+                os.rename('locale/en_GB', 'locale/en')

@@ -99,6 +99,8 @@ def tenant_translation(language, tenant_name, tenant_locale_path=None):
             else:
                 return gettext_module.NullTranslations()
         _translations[lang] = res
+        _tenants[tenant_name] = _translations
+
         return res
 
     default_translation = _fetch(getattr(get_tenant_properties(), 'LANGUAGE_CODE', None))
