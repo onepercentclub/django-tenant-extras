@@ -33,7 +33,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         default_ignore = ['*.orig', '.*', '.git', '*~', '*.pyc', '*.egg', '*.egg-info']
-        default_ignore += ['tests', 'static', 'build', 'node_modules', 'bower_components', 'sass', 'static', 'private', 'env', 'build', 'dist', ]
+        default_ignore += ['tests', 'static', 'build', 'node_modules', 'bower_components', 'sass', 'static', 'private', 'env', 'build', 'dist', 'frontend']
 
         self.verbosity = options.get('verbosity')
         self.compile = options.get('compile')
@@ -92,21 +92,6 @@ class Command(BaseCommand):
             include_paths=[self.bb_location],
             locale=self.locale,)
 
-        # Generate JS messages
-        ignore_patterns = ignore_patterns + ['reef',]
-
-        self.stdout.write('> Making JS po files...')
-        call_command(self.pocmd,
-            verbosity=self.verbosity,
-            tenant=tenant,
-            domain='djangojs',
-            all=True,
-            no_wrap=True,
-            no_obsolete=True,
-            keep_pot=False,
-            extensions=['js'],
-            ignore_patterns=ignore_patterns,
-            locale=self.locale,)
 
         if self.compile:
             # Compile .po files to .mo
