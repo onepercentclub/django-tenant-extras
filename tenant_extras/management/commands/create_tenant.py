@@ -1,4 +1,6 @@
 import os
+import random
+import string
 from optparse import make_option
 from django.core import exceptions
 from django.core.management.base import BaseCommand
@@ -7,8 +9,8 @@ from django.utils.six.moves import input
 from tenant_schemas.utils import get_tenant_model
 from django.conf import settings
 from django.db.utils import IntegrityError
-from django.template.loader import get_template, render_to_string
-
+from django.template.loader import render_to_string
+from django.core.management import call_command
 from tenant_extras.utils import update_tenant_site
 
 
@@ -28,68 +30,83 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         name = options.get('full_name', None)
         client_name = options.get('client_name', None)
-        # schema_name = options.get('schema_name', None)
-        # domain_url = options.get('domain_url', None)
+        schema_name = options.get('schema_name', None)
+        domain_url = options.get('domain_url', None)
 
-        # # If full-name is specified then don't prompt for any values.
-        # if name:
-        #     if not client_name:
-        #         client_name=''.join(ch  if ch.isalnum() else '-' for ch in name).lower()
-        #     if not schema_name:
-        #         schema_name=client_name.replace('-', '_')
-        #     if not domain_url:
-        #         base_domain = getattr(settings, 'TENANT_BASE_DOMAIN', 'localhost')
-        #         domain_url='{0}.{1}'.format(client_name, base_domain)
+        # If full-name is specified then don't prompt for any values.
+        if name:
+            if not client_name:
+                client_name=''.join(ch  if ch.isalnum() else '-' for ch in name).lower()
+            if not schema_name:
+                schema_name=client_name.replace('-', '_')
+            if not domain_url:
+                base_domain = getattr(settings, 'TENANT_BASE_DOMAIN', 'localhost')
+                domain_url='{0}.{1}'.format(client_name, base_domain)
 
-        #     client = self.store_client(
-        #         name=name,
-        #         client_name=client_name,
-        #         domain_url=domain_url,
-        #         schema_name=schema_name
-        #     )
-        #     if not client:
-        #         name = None
+            client = self.store_client(
+                name=name,
+                client_name=client_name,
+                domain_url=domain_url,
+                schema_name=schema_name
+            )
+            if not client:
+                name = None
 
-        # while name is None:
-        #     if not name:
-        #         input_msg = 'Tenant name'
-        #         name = input(force_str('%s: ' % input_msg))
+        while name is None:
+            if not name:
+                input_msg = 'Tenant name'
+                name = input(force_str('%s: ' % input_msg))
 
-        #     default_client_name=''.join(ch  if ch.isalnum() else '-' for ch in name).lower()
-        #     default_schema_name=default_client_name.replace('-', '_')
-        #     base_domain = getattr(settings, 'TENANT_BASE_DOMAIN', 'localhost')
-        #     default_domain_url='{0}.{1}'.format(default_client_name, base_domain)
+            default_client_name=''.join(ch  if ch.isalnum() else '-' for ch in name).lower()
+            default_schema_name=default_client_name.replace('-', '_')
+            base_domain = getattr(settings, 'TENANT_BASE_DOMAIN', 'localhost')
+            default_domain_url='{0}.{1}'.format(default_client_name, base_domain)
 
-        #     while client_name is None:
-        #         if not client_name:
-        #             input_msg = 'Client name'
-        #             input_msg = "%s (leave blank to use '%s')" % (input_msg, default_client_name)
-        #             client_name = input(force_str('%s: ' % input_msg)) or default_client_name
+            while client_name is None:
+                if not client_name:
+                    input_msg = 'Client name'
+                    input_msg = "%s (leave blank to use '%s')" % (input_msg, default_client_name)
+                    client_name = input(force_str('%s: ' % input_msg)) or default_client_name
 
-        #     while schema_name is None:
-        #         if not schema_name:
-        #             input_msg = 'Database schema name'
-        #             input_msg = "%s (leave blank to use '%s')" % (input_msg, default_schema_name)
-        #             schema_name = input(force_str('%s: ' % input_msg)) or default_schema_name
+            while schema_name is None:
+                if not schema_name:
+                    input_msg = 'Database schema name'
+                    input_msg = "%s (leave blank to use '%s')" % (input_msg, default_schema_name)
+                    schema_name = input(force_str('%s: ' % input_msg)) or default_schema_name
 
-        #     while domain_url is None:
-        #         if not domain_url:
-        #             input_msg = 'Domain url'
-        #             input_msg = "%s (leave blank to use '%s')" % (input_msg, default_domain_url)
-        #             domain_url = input(force_str('%s: ' % input_msg)) or default_domain_url
+            while domain_url is None:
+                if not domain_url:
+                    input_msg = 'Domain url'
+                    input_msg = "%s (leave blank to use '%s')" % (input_msg, default_domain_url)
+                    domain_url = input(force_str('%s: ' % input_msg)) or default_domain_url
 
-        #     client = self.store_client(
-        #         name=name,
-        #         client_name=client_name,
-        #         domain_url=domain_url,
-        #         schema_name=schema_name
-        #     )
-        #     if not client:
-        #         name = None
-        #         continue
+            client = self.store_client(
+                name=name,
+                client_name=client_name,
+                domain_url=domain_url,
+                schema_name=schema_name
+            )
+            if not client:
+                name = None
+                continue
 
         self.create_client_file_structure(client_name)
         self.create_properties_file(client_name)
+        self.create_tx_config_file(client_name)
+        self.load_fixtures(client_name)
+
+    def load_fixtures(self, client_name):
+        from django.db import connection
+
+        try:
+            tenant = get_tenant_model().objects.get(client_name=client_name)
+            connection.set_tenant(tenant)
+            call_command('loaddata', 'skills')
+            call_command('loaddata', 'redirects')
+            call_command('loaddata', 'project_data')
+            call_command('loaddata', 'geo_data')
+        except get_tenant_model.DoesNotExist:
+            self.stdout("Client not found. Skipping loading fixtures")
 
     def create_client_file_structure(self, client_name):
         """ Create the bare directory structure for a client in Reef """
@@ -111,26 +128,11 @@ class Command(BaseCommand):
 
         return True
 
-        #     default_client_name=''.join(ch  if ch.isalnum() else '-' for ch in name).lower()
-        #     default_schema_name=default_client_name.replace('-', '_')
-        #     base_domain = getattr(settings, 'TENANT_BASE_DOMAIN', 'localhost')
-        #     default_domain_url='{0}.{1}'.format(default_client_name, base_domain)
-
-        #     while client_name is None:
-        #         if not client_name:
-        #             input_msg = 'Client name'
-        #             input_msg = "%s (leave blank to use '%s')" % (input_msg, default_client_name)
-        #             client_name = input(force_str('%s: ' % input_msg)) or default_client_name
-
-
     def get_properties_information(self, client_name):
 
         default_project_type = 'sourcing'
         default_contact_email = 'info@onepercentclub.com'
         default_country_code = 'NL'
-        default_mixpanel = ''
-        default_maps = ''
-        default_analytics = ''
         default_english = 'yes'
         default_dutch = 'no'
         default_recurring_donations = 'no'
@@ -219,11 +221,10 @@ class Command(BaseCommand):
         return info
 
     def create_properties_file(self, client_name):
-        #client = get_tenant_model().objects.get(name=name)
-
-        tpl = get_template(template_name='tenant_extras/properties.tpl')
-
+        """ Write a properties.py file for the tenant """
         info = self.get_properties_information(client_name)
+
+        info.update({'jwt_secret': self.generate_jwt_key()})
 
         string = render_to_string('tenant_extras/properties.tpl', info)
 
@@ -233,8 +234,23 @@ class Command(BaseCommand):
         with open(properties_path, "w") as properties_file:
             properties_file.write(string)
 
+    def generate_jwt_key(self):
+        """ Generate a 50 char random key"""
+        return ''.join(random.choice(string.ascii_uppercase +
+                                     string.digits +
+                                     string.ascii_lowercase) for _ in range(50))
+
     def create_tx_config_file(self, client_name):
-        pass
+        """ Create a client-specific tx-config file """
+
+        string = render_to_string('tenant_extras/txconfig.tpl',
+                                  {'client_name': client_name})
+
+        config_path = ''.join([getattr(settings, 'MULTI_TENANT_DIR', None),
+                              '/', client_name, '/.tx/config'])
+
+        with open(config_path, "w") as config_file:
+            config_file.write(string)
 
     def store_client(self, name, client_name, domain_url, schema_name):
         try:
