@@ -33,67 +33,101 @@ class Command(BaseCommand):
         schema_name = options.get('schema_name', None)
         domain_url = options.get('domain_url', None)
 
-        # If full-name is specified then don't prompt for any values.
-        if name:
-            if not client_name:
-                client_name=''.join(ch  if ch.isalnum() else '-' for ch in name).lower()
-            if not schema_name:
-                schema_name=client_name.replace('-', '_')
-            if not domain_url:
-                base_domain = getattr(settings, 'TENANT_BASE_DOMAIN', 'localhost')
-                domain_url='{0}.{1}'.format(client_name, base_domain)
+        # # If full-name is specified then don't prompt for any values.
+        # if name:
+        #     if not client_name:
+        #         client_name=''.join(ch  if ch.isalnum() else '-' for ch in name).lower()
+        #     if not schema_name:
+        #         schema_name=client_name.replace('-', '_')
+        #     if not domain_url:
+        #         base_domain = getattr(settings, 'TENANT_BASE_DOMAIN', 'localhost')
+        #         domain_url='{0}.{1}'.format(client_name, base_domain)
 
-            client = self.store_client(
-                name=name,
-                client_name=client_name,
-                domain_url=domain_url,
-                schema_name=schema_name
-            )
-            if not client:
-                name = None
+        #     client = self.store_client(
+        #         name=name,
+        #         client_name=client_name,
+        #         domain_url=domain_url,
+        #         schema_name=schema_name
+        #     )
+        #     if not client:
+        #         name = None
 
-        while name is None:
-            if not name:
-                input_msg = 'Tenant name'
-                name = input(force_str('%s: ' % input_msg))
+        # while name is None:
+        #     if not name:
+        #         input_msg = 'Tenant name'
+        #         name = input(force_str('%s: ' % input_msg))
 
-            default_client_name=''.join(ch  if ch.isalnum() else '-' for ch in name).lower()
-            default_schema_name=default_client_name.replace('-', '_')
-            base_domain = getattr(settings, 'TENANT_BASE_DOMAIN', 'localhost')
-            default_domain_url='{0}.{1}'.format(default_client_name, base_domain)
+        #     default_client_name=''.join(ch  if ch.isalnum() else '-' for ch in name).lower()
+        #     default_schema_name=default_client_name.replace('-', '_')
+        #     base_domain = getattr(settings, 'TENANT_BASE_DOMAIN', 'localhost')
+        #     default_domain_url='{0}.{1}'.format(default_client_name, base_domain)
 
-            while client_name is None:
-                if not client_name:
-                    input_msg = 'Client name'
-                    input_msg = "%s (leave blank to use '%s')" % (input_msg, default_client_name)
-                    client_name = input(force_str('%s: ' % input_msg)) or default_client_name
+        #     while client_name is None:
+        #         if not client_name:
+        #             input_msg = 'Client name'
+        #             input_msg = "%s (leave blank to use '%s')" % (input_msg, default_client_name)
+        #             client_name = input(force_str('%s: ' % input_msg)) or default_client_name
 
-            while schema_name is None:
-                if not schema_name:
-                    input_msg = 'Database schema name'
-                    input_msg = "%s (leave blank to use '%s')" % (input_msg, default_schema_name)
-                    schema_name = input(force_str('%s: ' % input_msg)) or default_schema_name
+        #     while schema_name is None:
+        #         if not schema_name:
+        #             input_msg = 'Database schema name'
+        #             input_msg = "%s (leave blank to use '%s')" % (input_msg, default_schema_name)
+        #             schema_name = input(force_str('%s: ' % input_msg)) or default_schema_name
 
-            while domain_url is None:
-                if not domain_url:
-                    input_msg = 'Domain url'
-                    input_msg = "%s (leave blank to use '%s')" % (input_msg, default_domain_url)
-                    domain_url = input(force_str('%s: ' % input_msg)) or default_domain_url
+        #     while domain_url is None:
+        #         if not domain_url:
+        #             input_msg = 'Domain url'
+        #             input_msg = "%s (leave blank to use '%s')" % (input_msg, default_domain_url)
+        #             domain_url = input(force_str('%s: ' % input_msg)) or default_domain_url
 
-            client = self.store_client(
-                name=name,
-                client_name=client_name,
-                domain_url=domain_url,
-                schema_name=schema_name
-            )
-            if not client:
-                name = None
-                continue
+        #     client = self.store_client(
+        #         name=name,
+        #         client_name=client_name,
+        #         domain_url=domain_url,
+        #         schema_name=schema_name
+        #     )
+        #     if not client:
+        #         name = None
+        #         continue
 
-        self.create_client_file_structure(client_name)
-        self.create_properties_file(client_name)
-        self.create_tx_config_file(client_name)
-        self.load_fixtures(client_name)
+        # self.create_client_file_structure(client_name)
+        # self.create_properties_file(client_name)
+        # self.create_tx_config_file(client_name)
+        # self.load_fixtures(client_name)
+        self.create_transifex_repo(client_name)
+
+    def create_transifex_repo(self, client_name):
+        import requests
+        import json
+
+        username = None
+        password = None
+
+        while username is None:
+            if not username:
+                input_msg = "Please give your Transifex username"
+                username = input(force_str('%s: ' % input_msg))
+
+        while password is None:
+            if not password:
+                input_msg = "Please give your Transifex password"
+                password = input(force_str('%s: ' % input_msg))
+
+        base_url = "https://www.transifex.com/api/2/"
+
+        projects_url = base_url + 'projects/'
+
+        name = slug = "reef-{0}".format(client_name)
+
+        headers = {'content-type': 'application/json'}
+
+        payload = {'name': name,
+                   'slug': slug,
+                   'description': "Translations for {0}".format(client_name),
+                   'source_language_code': 'en',
+                   'private': True}
+        import pdb;pdb.set_trace()
+        r = requests.post(projects_url, auth=(username, password), data=json.dumps(payload))
 
     def load_fixtures(self, client_name):
         from django.db import connection
