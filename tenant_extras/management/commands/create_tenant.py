@@ -1,6 +1,3 @@
-import os
-import random
-import string
 from optparse import make_option
 from django.core import exceptions
 from django.core.management.base import BaseCommand
@@ -9,7 +6,6 @@ from django.utils.six.moves import input
 from tenant_schemas.utils import get_tenant_model
 from django.conf import settings
 from django.db.utils import IntegrityError
-from django.template.loader import render_to_string
 from django.core.management import call_command
 from tenant_extras.utils import update_tenant_site
 
@@ -27,7 +23,6 @@ class Command(BaseCommand):
             make_option('--post-command', help='Calls another management command after the tenant is created.')
         )
 
-
     def handle(self, *args, **options):
         name = options.get('full_name', None)
         client_name = options.get('client_name', None)
@@ -35,62 +30,62 @@ class Command(BaseCommand):
         domain_url = options.get('domain_url', None)
         post_command = options.get('post_command', None)
 
-        # # If full-name is specified then don't prompt for any values.
-        # if name:
-        #     if not client_name:
-        #         client_name=''.join(ch  if ch.isalnum() else '-' for ch in name).lower()
-        #     if not schema_name:
-        #         schema_name=client_name.replace('-', '_')
-        #     if not domain_url:
-        #         base_domain = getattr(settings, 'TENANT_BASE_DOMAIN', 'localhost')
-        #         domain_url='{0}.{1}'.format(client_name, base_domain)
+        # If full-name is specified then don't prompt for any values.
+        if name:
+            if not client_name:
+                client_name=''.join(ch  if ch.isalnum() else '-' for ch in name).lower()
+            if not schema_name:
+                schema_name=client_name.replace('-', '_')
+            if not domain_url:
+                base_domain = getattr(settings, 'TENANT_BASE_DOMAIN', 'localhost')
+                domain_url='{0}.{1}'.format(client_name, base_domain)
 
-        #     client = self.store_client(
-        #         name=name,
-        #         client_name=client_name,
-        #         domain_url=domain_url,
-        #         schema_name=schema_name
-        #     )
-        #     if not client:
-        #         name = None
+            client = self.store_client(
+                name=name,
+                client_name=client_name,
+                domain_url=domain_url,
+                schema_name=schema_name
+            )
+            if not client:
+                name = None
 
-        # while name is None:
-        #     if not name:
-        #         input_msg = 'Tenant name'
-        #         name = input(force_str('%s: ' % input_msg))
+        while name is None:
+            if not name:
+                input_msg = 'Tenant name'
+                name = input(force_str('%s: ' % input_msg))
 
-        #     default_client_name=''.join(ch  if ch.isalnum() else '-' for ch in name).lower()
-        #     default_schema_name=default_client_name.replace('-', '_')
-        #     base_domain = getattr(settings, 'TENANT_BASE_DOMAIN', 'localhost')
-        #     default_domain_url='{0}.{1}'.format(default_client_name, base_domain)
+            default_client_name=''.join(ch  if ch.isalnum() else '-' for ch in name).lower()
+            default_schema_name=default_client_name.replace('-', '_')
+            base_domain = getattr(settings, 'TENANT_BASE_DOMAIN', 'localhost')
+            default_domain_url='{0}.{1}'.format(default_client_name, base_domain)
 
-        #     while client_name is None:
-        #         if not client_name:
-        #             input_msg = 'Client name'
-        #             input_msg = "%s (leave blank to use '%s')" % (input_msg, default_client_name)
-        #             client_name = input(force_str('%s: ' % input_msg)) or default_client_name
+            while client_name is None:
+                if not client_name:
+                    input_msg = 'Client name'
+                    input_msg = "%s (leave blank to use '%s')" % (input_msg, default_client_name)
+                    client_name = input(force_str('%s: ' % input_msg)) or default_client_name
 
-        #     while schema_name is None:
-        #         if not schema_name:
-        #             input_msg = 'Database schema name'
-        #             input_msg = "%s (leave blank to use '%s')" % (input_msg, default_schema_name)
-        #             schema_name = input(force_str('%s: ' % input_msg)) or default_schema_name
+            while schema_name is None:
+                if not schema_name:
+                    input_msg = 'Database schema name'
+                    input_msg = "%s (leave blank to use '%s')" % (input_msg, default_schema_name)
+                    schema_name = input(force_str('%s: ' % input_msg)) or default_schema_name
 
-        #     while domain_url is None:
-        #         if not domain_url:
-        #             input_msg = 'Domain url'
-        #             input_msg = "%s (leave blank to use '%s')" % (input_msg, default_domain_url)
-        #             domain_url = input(force_str('%s: ' % input_msg)) or default_domain_url
+            while domain_url is None:
+                if not domain_url:
+                    input_msg = 'Domain url'
+                    input_msg = "%s (leave blank to use '%s')" % (input_msg, default_domain_url)
+                    domain_url = input(force_str('%s: ' % input_msg)) or default_domain_url
 
-        #     client = self.store_client(
-        #         name=name,
-        #         client_name=client_name,
-        #         domain_url=domain_url,
-        #         schema_name=schema_name
-        #     )
-        #     if not client:
-        #         name = None
-        #         continue
+            client = self.store_client(
+                name=name,
+                client_name=client_name,
+                domain_url=domain_url,
+                schema_name=schema_name
+            )
+            if not client:
+                name = None
+                continue
 
         if post_command:
             call_command(post_command, *args, **options)
