@@ -6,8 +6,9 @@ from django.utils.six.moves import input
 from tenant_schemas.utils import get_tenant_model
 from django.conf import settings
 from django.db.utils import IntegrityError
-
+from django.core.management import call_command
 from tenant_extras.utils import update_tenant_site
+
 
 class Command(BaseCommand):
     help = 'Create a tenant'
@@ -19,6 +20,7 @@ class Command(BaseCommand):
             make_option('--schema-name', help='Specifies the schema name for the tenant (e.g. "new_tenant").'),
             make_option('--domain-url', help='Specifies the domain_url for the tenant (e.g. "new-tenant.localhost").'),
             make_option('--client-name', help='Specifies the client name for the tenant (e.g. "new-tenant").'),
+            make_option('--post-command', help='Calls another management command after the tenant is created.')
         )
 
     def handle(self, *args, **options):
@@ -26,6 +28,7 @@ class Command(BaseCommand):
         client_name = options.get('client_name', None)
         schema_name = options.get('schema_name', None)
         domain_url = options.get('domain_url', None)
+        post_command = options.get('post_command', None)
 
         # If full-name is specified then don't prompt for any values.
         if name:
@@ -62,7 +65,6 @@ class Command(BaseCommand):
                     input_msg = "%s (leave blank to use '%s')" % (input_msg, default_client_name)
                     client_name = input(force_str('%s: ' % input_msg)) or default_client_name
 
-
             while schema_name is None:
                 if not schema_name:
                     input_msg = 'Database schema name'
@@ -84,6 +86,9 @@ class Command(BaseCommand):
             if not client:
                 name = None
                 continue
+
+        if post_command:
+            call_command(post_command, *args, **options)
 
     def store_client(self, name, client_name, domain_url, schema_name):
         try:
