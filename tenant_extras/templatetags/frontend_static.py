@@ -1,4 +1,6 @@
 import json
+import os
+import stat
 from os.path import join
 
 from django import template
@@ -7,7 +9,6 @@ from django.templatetags.static import StaticNode
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.db import connection
 from django.utils._os import safe_join
-import os
 
 
 register = template.Library()
@@ -49,9 +50,14 @@ class StaticFilesNode(StaticNode):
 
 
         frontend_path = self.frontend_path(path)
+        full_frontend_path = safe_join(getattr(settings, 'MULTI_TENANT_DIST_DIR'), frontend_path)
 
-        if os.path.isfile(safe_join(getattr(settings, 'MULTI_TENANT_DIST_DIR'), frontend_path)):
-            path = "/".join(['frontend', frontend_path])
+        if os.path.isfile(full_frontend_path):
+            static_path = staticfiles_storage.url("/".join(['frontend', frontend_path]))
+            versioned_path = '%s?v=%s' % (static_path, os.stat(full_frontend_path)[stat.ST_MTIME])
+
+            return versioned_path
+
         return staticfiles_storage.url(path)
 
 
