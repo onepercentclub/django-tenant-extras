@@ -22,7 +22,7 @@ setup(
     install_requires=[
         'Django <= 1.6.8',
         'django-tenant-schemas >= 1.5.0',
-        'sorl-thumbnail==11.12'
+        'python-memcached>=1.53',
     ],
     tests_require={
         'bunch==1.0.1',
