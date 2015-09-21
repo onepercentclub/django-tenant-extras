@@ -83,12 +83,31 @@ class Command(BaseCommand):
                 domain_url=domain_url,
                 schema_name=schema_name
             )
+            if client is False:
+                break
+
             if not client:
                 name = None
                 continue
 
-        if post_command:
+        if client and client_name:
+            self.load_fixtures(client_name=client_name)
+
+        if client and post_command:
             call_command(post_command, *args, **options)
+
+    def load_fixtures(self, client_name):
+        from django.db import connection
+
+        try:
+            tenant = get_tenant_model().objects.get(client_name=client_name)
+            connection.set_tenant(tenant)
+            call_command('loaddata', 'skills')
+            call_command('loaddata', 'redirects')
+            call_command('loaddata', 'project_data')
+            call_command('loaddata', 'geo_data')
+        except get_tenant_model().DoesNotExist:
+            self.stdout.write("Client not found. Skipping loading fixtures")
 
     def store_client(self, name, client_name, domain_url, schema_name):
         try:
