@@ -7,16 +7,13 @@ import gettext as gettext_module
 
 from django import http
 from django.conf import settings
-from django.core.urlresolvers import is_valid_path
-
-from django.http import HttpResponseRedirect
 from django.utils.importlib import import_module
-from django.utils.cache import patch_vary_headers
 from django.middleware.locale import LocaleMiddleware as _LocaleMiddleware
 from django.utils.translation.trans_real import to_locale, DjangoTranslation
 from django.utils import translation
 from django.utils.datastructures import SortedDict
 from django.utils._os import upath
+from django.core.urlresolvers import LocaleRegexURLResolver, get_resolver
 
 from django.db import connection
 
@@ -40,7 +37,7 @@ def tenant_translation(language, tenant_name, tenant_locale_path=None):
     This is taken from the Django translation utils
     https://github.com/django/django/blob/1.6.8/django/utils/translation/trans_real.py#L101-L180
 
-    It has been altered to handle tenant specific locale file paths.
+    It has been altered to handle tenant specific locale file paths. 
     """
 
     global _tenants
@@ -115,7 +112,7 @@ def tenant_translation(language, tenant_name, tenant_locale_path=None):
 class TenantLocaleMiddleware(_LocaleMiddleware):
 
     def process_request(self, request):
-        tenant_name = connection.tenant.client_name
+        tenant_name = connection.tenant.client_name 
         site_locale = os.path.join(settings.MULTI_TENANT_DIR, tenant_name, 'locale')
 
         check_path = self.is_language_prefix_patterns_used()
@@ -125,47 +122,23 @@ class TenantLocaleMiddleware(_LocaleMiddleware):
         request.LANGUAGE_CODE = translation.get_language()
 
     def process_response(self, request, response):
-        language = translation.get_language()
-        language_from_path = translation.get_language_from_path(
-                request.path_info, supported=self._supported_languages
-        )
-        if (response.status_code == 404 and not language_from_path
-                and self.is_language_prefix_patterns_used()):
-            urlconf = getattr(request, 'urlconf', None)
-            language_path = '/%s%s' % (language, request.path_info)
-            path_valid = is_valid_path(language_path, urlconf)
+        response = super(TenantLocaleMiddleware, self).process_response(request, response)
 
-            if (not path_valid and settings.APPEND_SLASH
-                    and not language_path.endswith('/')):
-                path_valid = is_valid_path("%s/" % language_path, urlconf)
-
-            if path_valid and not is_valid_path(request.path_info):
-                language_url = "%s://%s/%s%s" % (
-                    'https' if request.is_secure() else 'http',
-                    request.get_host(), language, request.get_full_path())
-                return HttpResponseRedirect(language_url)
-
-        if not (self.is_language_prefix_patterns_used()
-                and language_from_path):
-            patch_vary_headers(response, ('Accept-Language',))
-        if 'Content-Language' not in response:
-            response['Content-Language'] = language
-
-        #Store the language in the session
+        """ Store the language in the session """
         lang_code = translation.get_language()
 
         if hasattr(request, 'session'):
             """ Set the language in the session if it has changed """
-            if (request.session.get('django_language', False) and
+            if (request.session.get('django_language', False) and 
                     request.session['django_language'] != lang_code):
                 request.session['django_language'] = lang_code
         else:
             """ Fall back to language cookie """
             response.set_cookie(settings.LANGUAGE_COOKIE_NAME, lang_code)
-
+            
         response['Content-Language'] = translation.get_language()
         translation.deactivate()
-
+        
         return response
 
 
@@ -187,8 +160,8 @@ class LocaleRedirectMiddleware(object):
     """
 
     def process_request(self, request):
-        """
-        This builds strongly on django's Locale middleware, so check
+        """ 
+        This builds strongly on django's Locale middleware, so check 
         if it's enabled.
 
         This middleware is only relevant with i18n_patterns.
@@ -235,7 +208,7 @@ class LocaleRedirectMiddleware(object):
         if lang_code and lang_code != current_url_lang_prefix:
             if prefix_is_lang:
                 # Replace current url language prefix
-                expected_url_lang_prefix = '/{0}/'.format(lang_code)
+                expected_url_lang_prefix = '/{0}/'.format(lang_code)                    
                 new_location = request.get_full_path().replace(
                             '/{0}/'.format(current_url_lang_prefix), expected_url_lang_prefix)
             else:
