@@ -1,4 +1,5 @@
 import mock
+from mock import patch
 
 from bunch import bunchify
 
@@ -38,41 +39,74 @@ class TenantLocaleMiddlewareTests(TestCase):
             self.assertEquals(last_call_path, '/clients/tenant_b/locale')
 
 
+@override_settings(LOCALE_REDIRECT_IGNORE=('/api', '/go'))
 class LocaleRedirectMiddlewareTests(TestCase):
-
     def setUp(self):
         self.rf = RequestFactory()
         self.middleware = LocaleRedirectMiddleware()
 
+    @patch.object(LocaleRedirectMiddleware, 'is_language_prefix_patterns_used')
+    def _process_request(self, request, mock_method):
+        mock_method.return_value = True
+        result = self.middleware.process_request(request)
+        return result
+
+    def test_go_path(self):
+        request = self.rf.get('/go/projects')
+        result = self._process_request(request)
+
+        self.assertIsNone(result, 'Go paths should not redirect')
+
+    def test_api_path(self):
+        request = self.rf.get('/api/projects/1')
+        result = self._process_request(request)
+
+        self.assertIsNone(result, 'API paths should not redirect')
+
+    def test_projects_path_with_anon_user(self):
+        request = self.rf.get('/projects/1')
+        result = self._process_request(request)
+
+        self.assertEqual(result.url, '/en/projects/1')
+
+    def test_unsupported_language(self):
+        request = self.rf.get('/be/')
+        result = self._process_request(request)
+
+        self.assertEqual(result.url, '/en/')
+
     def test_slash_with_anon_user(self):
         request = self.rf.get('/')
-        result = self.middleware.process_request(request)
+        result = self._process_request(request)
 
         self.assertEqual(result.url, '/en/')
 
     def test_nl_with_anon_user(self):
         request = self.rf.get('/nl/')
-        result = self.middleware.process_request(request)
+        result = self._process_request(request)
 
         self.assertIsNone(result,
                    'Should not alter the request if language set in url')
 
     def test_cookie_with_anon_user(self):
-        request = self.rf.get('/en/')
+        request = self.rf.get('/')
         request.COOKIES['django_language'] = 'nl'
-        result = self.middleware.process_request(request)
+        result = self._process_request(request)
 
         self.assertEqual(result.url, '/nl/')
 
-    def test_go_path_with_anon_user(self):
-        request = self.rf.get('/go/projects')
-        result = self.middleware.process_request(request)
+    def test_cookie_with_language_and_anon_user(self):
+        request = self.rf.get('/en/')
+        request.COOKIES['django_language'] = 'nl'
+        result = self._process_request(request)
 
-        self.assertIsNone(result, 'Go paths should not redirect')
+        # If user requests specific langauge then it will
+        # override the language in the cookie => no redirect.
+        self.assertIsNone(result, 'Cookie language setting should not overwrite request language')
 
     def test_admin_path_with_anon_user(self):
         request = self.rf.get('/admin')
-        result = self.middleware.process_request(request)
+        result = self._process_request(request)
 
         self.assertEqual(result.url, '/en/admin')
 
