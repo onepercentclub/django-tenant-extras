@@ -117,70 +117,6 @@ def tenant_translation(language, tenant_name, tenant_locale_path=None):
 
 class TenantLocaleMiddleware(_LocaleMiddleware):
 
-    def process_request(self, request):
-        tenant_name = connection.tenant.client_name
-        site_locale = os.path.join(settings.MULTI_TENANT_DIR, tenant_name, 'locale')
-
-        check_path = self.is_language_prefix_patterns_used()
-        language = translation.get_language_from_request(
-            request, check_path=check_path)
-        translation._trans._active.value = tenant_translation(language, tenant_name, site_locale)
-        request.LANGUAGE_CODE = translation.get_language()
-
-    def process_response(self, request, response):
-        language = translation.get_language()
-        language_from_path = translation.get_language_from_path(
-                request.path_info, supported=self._supported_languages
-        )
-        if (response.status_code == 404 and not language_from_path
-                and self.is_language_prefix_patterns_used()):
-            urlconf = getattr(request, 'urlconf', None)
-            language_path = '/%s%s' % (language, request.path_info)
-            path_valid = is_valid_path(language_path, urlconf)
-
-            if (not path_valid and settings.APPEND_SLASH
-                    and not language_path.endswith('/')):
-                path_valid = is_valid_path("%s/" % language_path, urlconf)
-
-            if path_valid and not is_valid_path(request.path_info):
-                language_url = "%s://%s/%s%s" % (
-                    'https' if request.is_secure() else 'http',
-                    request.get_host(), language, request.get_full_path())
-                return HttpResponseRedirect(language_url)
-
-        if not (self.is_language_prefix_patterns_used()
-                and language_from_path):
-            patch_vary_headers(response, ('Accept-Language',))
-        if 'Content-Language' not in response:
-            response['Content-Language'] = language
-
-        #Store the language in the session
-        lang_code = translation.get_language()
-
-        if hasattr(request, 'session'):
-            """ Set the language in the session if it has changed """
-            if (request.session.get('django_language', False) and
-                    request.session['django_language'] != lang_code):
-                request.session['django_language'] = lang_code
-        else:
-            """ Fall back to language cookie """
-            response.set_cookie(settings.LANGUAGE_COOKIE_NAME, lang_code)
-
-        response['Content-Language'] = translation.get_language()
-        translation.deactivate()
-
-        return response
-
-
-class LocaleRedirectMiddleware(object):
-    """
-    If i18n_patterns are used, the language is not set on index page load because
-    we are not using sessions for the current user - we use jwt. This causes the
-    middleware to potentially set an incorrect language.
-
-    This middleware will check if the language
-    """
-
     def __init__(self):
         self.lang_code = None
 
@@ -218,7 +154,21 @@ class LocaleRedirectMiddleware(object):
         except LookupError:
             return settings.LANGUAGE_CODE
 
+    def _set_cookie(self, request, response):
+        if self.lang_code != request.COOKIES.get(settings.LANGUAGE_COOKIE_NAME):
+            response.set_cookie(settings.LANGUAGE_COOKIE_NAME, self.lang_code)
+
     def process_request(self, request):
+        tenant_name = connection.tenant.client_name
+        site_locale = os.path.join(settings.MULTI_TENANT_DIR, tenant_name, 'locale')
+
+        check_path = self.is_language_prefix_patterns_used()
+        language = translation.get_language_from_request(
+            request, check_path=check_path)
+        translation._trans._active.value = tenant_translation(language, tenant_name, site_locale)
+        request.LANGUAGE_CODE = translation.get_language()
+
+    def process_response(self, request, response):
         """
         This builds strongly on django's Locale middleware, so check
         if it's enabled.
@@ -227,14 +177,13 @@ class LocaleRedirectMiddleware(object):
         is not to a 'docs', 'api' or 'go' endpoint.
 
         Options:
+          Supported Language: respond without checking further
           User Authenticated:
-            Supported Language: respond without checking further
             Unsupported Language or No Language (eg '/'):
               - redirect to cookie language
               - redirect to users primary language
               - redirect to default site language
           User Unauthenticated:
-            Supported Language: respond without checking further
             Unsupported Language or No Language (eg '/'):
               - redirect to cookie language
               - redirect browser accepted language
@@ -242,7 +191,7 @@ class LocaleRedirectMiddleware(object):
         """
         ignore_paths = getattr(settings, 'LOCALE_REDIRECT_IGNORE', None)
         if not self.is_language_prefix_patterns_used() or (ignore_paths and request.path.startswith(ignore_paths)):
-            return
+            return response
 
         _default_language = getattr(get_tenant_properties(), 'LANGUAGE_CODE', None)
         language_code_prefix_re = re.compile(r'^/(([a-z]{2})(-[A-Z]{2})?)(/|$)')
@@ -257,7 +206,8 @@ class LocaleRedirectMiddleware(object):
                 lang_code = get_supported_language_variant(current_url_lang_prefix)
                 if self._is_supported_language(lang_code):
                   self.lang_code = lang_code
-                  return
+                  self._set_cookie(request, response)
+                  return response
             except LookupError:
                 pass
         else:
@@ -316,14 +266,11 @@ class LocaleRedirectMiddleware(object):
 
             return http.HttpResponseRedirect(new_location)
 
-    def process_response(self, request, response):
-        """ Store the language in the cookie """
-        if self.lang_code != request.COOKIES.get(settings.LANGUAGE_COOKIE_NAME):
-            response.set_cookie(settings.LANGUAGE_COOKIE_NAME, self.lang_code)
+        self._set_cookie(request, response)
 
-        return response
+        return super(TenantLocaleMiddleware, self).process_response(request, response)
 
-    # re-use the original function
+
+    # re-use the original is_language_prefix_patterns_used function
     mw = _LocaleMiddleware()
     is_language_prefix_patterns_used = mw.is_language_prefix_patterns_used
-

@@ -6,9 +6,10 @@ from bunch import bunchify
 from django.test import RequestFactory, TestCase
 from django.test.utils import override_settings
 from django.core.exceptions import ImproperlyConfigured
+from django.http import HttpResponse, HttpResponseRedirect
 
+from ..middleware import TenantLocaleMiddleware
 
-from ..middleware import LocaleRedirectMiddleware, TenantLocaleMiddleware
 
 @override_settings(MULTI_TENANT_DIR='/clients', INSTALLED_APPS=(),
                    LOCALE_PATHS=())
@@ -39,74 +40,82 @@ class TenantLocaleMiddlewareTests(TestCase):
             self.assertEquals(last_call_path, '/clients/tenant_b/locale')
 
 
-@override_settings(LOCALE_REDIRECT_IGNORE=('/api', '/go'))
-class LocaleRedirectMiddlewareTests(TestCase):
+@override_settings(MULTI_TENANT_DIR='/clients', INSTALLED_APPS=(),
+                   LOCALE_PATHS=(), LOCALE_REDIRECT_IGNORE=('/api', '/go'))
+class TenantLocaleMiddlewareRedirectTests(TestCase):
     def setUp(self):
-        self.rf = RequestFactory()
-        self.middleware = LocaleRedirectMiddleware()
+        super(TenantLocaleMiddlewareRedirectTests, self).setUp()
 
-    @patch.object(LocaleRedirectMiddleware, 'is_language_prefix_patterns_used')
-    def _process_request(self, request, mock_method):
-        mock_method.return_value = True
-        result = self.middleware.process_request(request)
+        self.rf = RequestFactory()
+        self.middleware = TenantLocaleMiddleware()
+
+    @patch.object(TenantLocaleMiddleware, 'is_language_prefix_patterns_used')
+    @patch.object(TenantLocaleMiddleware, 'process_request')
+    def _process_response(self, request, mock_process_request, mock_other):
+        mock_other.return_value = True
+        response = HttpResponse()
+        result = self.middleware.process_response(request, response)
         return result
 
     def test_go_path(self):
         request = self.rf.get('/go/projects')
-        result = self._process_request(request)
+        result = self._process_response(request)
 
-        self.assertIsNone(result, 'Go paths should not redirect')
+        self.assertIsInstance(result, HttpResponse,
+                    'Go paths should not redirect')
 
     def test_api_path(self):
         request = self.rf.get('/api/projects/1')
-        result = self._process_request(request)
+        result = self._process_response(request)
 
-        self.assertIsNone(result, 'API paths should not redirect')
+        self.assertIsInstance(result, HttpResponse,
+                    'API paths should not redirect')
 
     def test_projects_path_with_anon_user(self):
         request = self.rf.get('/projects/1')
-        result = self._process_request(request)
+        result = self._process_response(request)
 
         self.assertEqual(result.url, '/en/projects/1')
 
     def test_unsupported_language(self):
         request = self.rf.get('/be/')
-        result = self._process_request(request)
+        result = self._process_response(request)
 
         self.assertEqual(result.url, '/en/')
 
     def test_slash_with_anon_user(self):
         request = self.rf.get('/')
-        result = self._process_request(request)
+        result = self._process_response(request)
 
         self.assertEqual(result.url, '/en/')
 
     def test_nl_with_anon_user(self):
         request = self.rf.get('/nl/')
-        result = self._process_request(request)
+        result = self._process_response(request)
 
-        self.assertIsNone(result,
+        self.assertIsInstance(result, HttpResponse,
                    'Should not alter the request if language set in url')
 
     def test_cookie_with_anon_user(self):
         request = self.rf.get('/')
         request.COOKIES['django_language'] = 'nl'
-        result = self._process_request(request)
+        result = self._process_response(request)
 
         self.assertEqual(result.url, '/nl/')
 
     def test_cookie_with_language_and_anon_user(self):
         request = self.rf.get('/en/')
         request.COOKIES['django_language'] = 'nl'
-        result = self._process_request(request)
+        result = self._process_response(request)
 
         # If user requests specific langauge then it will
         # override the language in the cookie => no redirect.
-        self.assertIsNone(result, 'Cookie language setting should not overwrite request language')
+        self.assertIsInstance(result, HttpResponse,
+          'Cookie language setting should not overwrite request language')
 
     def test_admin_path_with_anon_user(self):
         request = self.rf.get('/admin')
-        result = self._process_request(request)
+        result = self._process_response(request)
 
         self.assertEqual(result.url, '/en/admin')
 
