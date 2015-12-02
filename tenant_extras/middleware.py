@@ -189,6 +189,10 @@ class TenantLocaleMiddleware(_LocaleMiddleware):
               - redirect browser accepted language
               - redirect to default site language
         """
+        if response.status_code in [301, 302]:
+            # No need to check for a locale redirect if the response is already a redirect.
+            return response
+
         ignore_paths = getattr(settings, 'LOCALE_REDIRECT_IGNORE', None)
         if not self.is_language_prefix_patterns_used() or (ignore_paths and request.path.startswith(ignore_paths)):
             return response
