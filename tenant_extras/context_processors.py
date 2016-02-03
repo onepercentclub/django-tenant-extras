@@ -1,4 +1,5 @@
 import json
+import re
 
 from django.db import connection
 from django.conf import settings
@@ -76,7 +77,9 @@ def tenant_properties(request):
     for item in props:
         try:
             context[item.upper()] = getattr(properties, item.upper())
-            context['settings'][item.upper()] = getattr(properties, item.upper())
+            # Use camelcase for setting keys (convert from snakecase)
+            key = re.sub('_.',lambda x: x.group()[1].upper(), item)
+            context['settings'][key] = getattr(properties, item.upper())
         except AttributeError:
             pass
 

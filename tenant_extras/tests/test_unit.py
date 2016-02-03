@@ -144,14 +144,16 @@ class TenantPropertiesContextProcessorTestCase(TestCase):
     def setUp(self):
         self.rf = RequestFactory()
 
-    @override_settings(EXPOSED_TENANT_PROPERTIES=['test'],
-                       TEST='value-for-test')
+    @override_settings(EXPOSED_TENANT_PROPERTIES=['test', 'this_is_a_snake'],
+                       TEST='value-for-test',
+                       THIS_IS_A_SNAKE=True)
     def test_default_settings_property_list(self):
         from ..context_processors import tenant_properties
         context = tenant_properties(self.rf)
         self.assertEqual(context['TEST'], 'value-for-test')
         # Check that the added value is in the context
-        self.assertIn('"TEST": "value-for-test"', str(context['settings']))
+        self.assertIn('"test": "value-for-test"', str(context['settings']))
+        self.assertIn('"thisIsASnake": true', context['settings'])
 
     @override_settings(EXPOSED_TENANT_PROPERTIES=['test'],
                        TEST='value-for-test',
@@ -162,7 +164,7 @@ class TenantPropertiesContextProcessorTestCase(TestCase):
         # Check that Tenant test-value specified in properties2 is used.
         context = tenant_properties(self.rf)
         self.assertEqual(context['TEST'], 'my-very-own-test-value')
-        self.assertIn('"TEST": "my-very-own-test-value"', context['settings'])
+        self.assertIn('"test": "my-very-own-test-value"', context['settings'])
 
     def test_no_exposed_tenant_properties_setting(self):
         with mock.patch('tenant_extras.utils.get_tenant_properties') as get_tenant_properties, \
