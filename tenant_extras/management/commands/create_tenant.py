@@ -118,7 +118,6 @@ class Command(BaseCommand):
                 schema_name=schema_name
             )
             client.save()
-            update_tenant_site(client, name, domain_url)
             return client
         except exceptions.ValidationError as e:
             self.stderr.write("Error: %s" % '; '.join(e.messages))

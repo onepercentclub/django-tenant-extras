@@ -7,7 +7,6 @@ from django.core.management.base import CommandError
 
 from tenant_schemas.utils import get_public_schema_name, get_tenant_model
 
-from tenant_extras.utils import update_tenant_site
 
 class Command(BaseCommand):
     help = "Change tenant domain name."
@@ -33,7 +32,5 @@ class Command(BaseCommand):
         tenant = get_tenant_model().objects.get(client_name=tenant_name)
         tenant.domain_url = domain.split(":", 1)[0]  # remove port, if any
         tenant.save()
-
-        update_tenant_site(tenant, domain, domain)
 
         self.stdout.write('Updated {0} to use {1}'.format(tenant_name, domain))
