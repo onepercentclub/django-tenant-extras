@@ -25,11 +25,11 @@ class Mock2Properties():
     tenant_properties = {
         'RECURRING_DONATIONS_ENABLED': False,
         'DONATIONS_ENABLED': True,
-        'LANGUAGE_CODE': "nl",
+        'LANGUAGE_CODE': "en",
         'TEST': "my-very-own-test-value",
         'LANGUAGES': (
             ('nl', 'Nederlands'),
-            ('fr', 'French'),
+            ('en', 'English'),
         )
     }
 
