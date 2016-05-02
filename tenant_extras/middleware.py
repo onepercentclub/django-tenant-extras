@@ -111,7 +111,6 @@ def tenant_translation(language, tenant_name, tenant_locale_path=None):
 
     default_translation = _fetch(getattr(get_tenant_properties(), 'LANGUAGE_CODE', None))
     current_translation = _fetch(language, fallback=default_translation)
-
     return current_translation
 
 
@@ -189,6 +188,7 @@ class TenantLocaleMiddleware(_LocaleMiddleware):
               - redirect browser accepted language
               - redirect to default site language
         """
+
         if response.status_code in [301, 302]:
             # No need to check for a locale redirect if the response is already a redirect.
             return response
@@ -204,7 +204,6 @@ class TenantLocaleMiddleware(_LocaleMiddleware):
 
         if regex_match:
             current_url_lang_prefix = regex_match.group(2)
-
             try:
                 # if the language requested is valid and supported then return early
                 lang_code = get_supported_language_variant(current_url_lang_prefix)
@@ -257,7 +256,6 @@ class TenantLocaleMiddleware(_LocaleMiddleware):
 
         # Set the lang_code on the instance for use in the response / cookie
         self.lang_code = lang_code
-
         # If the lang_code is different to the current url prefix then redirect.
         if lang_code and lang_code != current_url_lang_prefix:
             if current_url_lang_prefix:
@@ -271,7 +269,6 @@ class TenantLocaleMiddleware(_LocaleMiddleware):
             return http.HttpResponseRedirect(new_location)
 
         self._set_cookie(request, response)
-
         return super(TenantLocaleMiddleware, self).process_response(request, response)
 
 
