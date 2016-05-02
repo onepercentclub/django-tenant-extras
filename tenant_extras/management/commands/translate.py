@@ -41,7 +41,7 @@ class Command(BaseCommand):
         self.pocmd = options.get('pocmd')
 
         if not self.locale:
-            self.locale = ['en', 'en_GB', 'nl']
+            self.locale = ['en', 'en_GB', 'nl', 'fr']
 
         # Find bb_location
         out = StringIO.StringIO()
