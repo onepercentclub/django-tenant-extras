@@ -3,23 +3,18 @@ import os
 import sys
 import re
 import copy
-import logging
 
 import gettext as gettext_module
 
 from django import http
 from django.conf import settings
-from django.core.urlresolvers import is_valid_path
 
-from django.http import HttpResponseRedirect
-from django.utils.importlib import import_module
-from django.utils.cache import patch_vary_headers
+from importlib import import_module
 from django.middleware.locale import LocaleMiddleware as _LocaleMiddleware
 from django.utils.translation.trans_real import (
                             to_locale, DjangoTranslation, parse_accept_lang_header,
                             get_supported_language_variant)
 from django.utils import translation
-from django.utils.datastructures import SortedDict
 from django.utils._os import upath
 from django.db import connection
 
@@ -27,9 +22,11 @@ from .utils import get_tenant_properties
 
 _tenants = {}
 
+
 def _translation(path, loc, lang):
     try:
-        t = gettext_module.translation('django', path, [loc], DjangoTranslation)
+        t = gettext_module.translation('django', path, [loc],
+                                       DjangoTranslation)
         # gettext will not give us a deep copy. This means _merge() will update
         # the original, global translation object.
         t = copy.deepcopy(t)
@@ -37,6 +34,7 @@ def _translation(path, loc, lang):
         return t
     except IOError:
         return None
+
 
 def tenant_translation(language, tenant_name, tenant_locale_path=None):
     """
