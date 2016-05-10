@@ -118,6 +118,7 @@ class TenantLocaleMiddleware(_LocaleMiddleware):
 
     def __init__(self):
         self.lang_code = None
+        self._supported_languages = dict(getattr(get_tenant_properties(), 'LANGUAGES')).keys()
 
     def _is_supported_language(self, language_code):
         """
@@ -188,7 +189,6 @@ class TenantLocaleMiddleware(_LocaleMiddleware):
               - redirect browser accepted language
               - redirect to default site language
         """
-
         if response.status_code in [301, 302]:
             # No need to check for a locale redirect if the response is already a redirect.
             return response
