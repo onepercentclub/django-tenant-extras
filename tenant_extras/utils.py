@@ -41,19 +41,6 @@ def get_tenant_properties(property=None):
 
     return props
 
-def update_tenant_site(tenant, name, domain):
-    """
-        switch to the client's schema and update the primary
-        site object
-    """
-    connection.set_tenant(tenant)
-    site, _ = Site.objects.get_or_create(pk=1)
-    site.name = name
-    site.domain = domain
-    site.save()
-    connection.set_schema_to_public()
-
-
 class TenantLanguage():
 
     def __init__(self, language):

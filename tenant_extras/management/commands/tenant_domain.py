@@ -13,9 +13,9 @@ class Command(BaseCommand):
 
     def __init__(self):
         self.option_list = self.option_list + (
-            make_option('--tenant', dest='tenant', default=None, 
+            make_option('--tenant', dest='tenant', default=None,
                     help="Change domain for tenant."),
-            make_option('--domain', dest='domain', default=None, 
+            make_option('--domain', dest='domain', default=None,
                     help="New domain for tenant."),
         )
 

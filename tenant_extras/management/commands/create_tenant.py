@@ -7,7 +7,6 @@ from tenant_schemas.utils import get_tenant_model
 from django.conf import settings
 from django.db.utils import IntegrityError
 from django.core.management import call_command
-from tenant_extras.utils import update_tenant_site
 
 
 class Command(BaseCommand):
