@@ -1,9 +1,9 @@
 import mock
 from mock import patch
-
 from bunch import bunchify
+from unittest import TestCase
 
-from django.test import RequestFactory, TestCase
+from django.test import RequestFactory
 from django.test.utils import override_settings
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpResponse, HttpResponseRedirect

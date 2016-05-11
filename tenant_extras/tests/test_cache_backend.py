@@ -1,4 +1,4 @@
-from django.test import TestCase
+from unittest import TestCase
 import mock
 from ..cache import TenantAwareMemcachedCache
 
