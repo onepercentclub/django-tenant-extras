@@ -6,4 +6,4 @@ cache:
 python:
 - '2.7'
 script:
-- python ./setup.py test
+- ./setup.py test
