@@ -1,19 +1,19 @@
 import mock
 from mock import patch
 from bunch import bunchify
-from unittest import TestCase
 
 from django.test import RequestFactory
+from django.test.testcases import SimpleTestCase
 from django.test.utils import override_settings
 from django.core.exceptions import ImproperlyConfigured
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse
 
 from ..middleware import TenantLocaleMiddleware
 
 
 @override_settings(MULTI_TENANT_DIR='/clients', INSTALLED_APPS=(),
                    LOCALE_PATHS=())
-class TenantLocaleMiddlewareTests(TestCase):
+class TenantLocaleMiddlewareTests(SimpleTestCase):
     def setUp(self):
         super(TenantLocaleMiddlewareTests, self).setUp()
 
@@ -42,7 +42,7 @@ class TenantLocaleMiddlewareTests(TestCase):
 
 @override_settings(MULTI_TENANT_DIR='/clients', INSTALLED_APPS=(),
                    LOCALE_PATHS=(), LOCALE_REDIRECT_IGNORE=('/api', '/go'))
-class TenantLocaleMiddlewareRedirectTests(TestCase):
+class TenantLocaleMiddlewareRedirectTests(SimpleTestCase):
     def setUp(self):
         super(TenantLocaleMiddlewareRedirectTests, self).setUp()
 
@@ -122,7 +122,7 @@ class TenantLocaleMiddlewareRedirectTests(TestCase):
 
 @mock.patch('django.db.connection',
             bunchify({'tenant': {'name': 'My Test', 'client_name': 'test'}}))
-class ConfContextProcessorTestCase(TestCase):
+class ConfContextProcessorTestCase(SimpleTestCase):
 
     def setUp(self):
         self.rf = RequestFactory()
@@ -139,7 +139,7 @@ class ConfContextProcessorTestCase(TestCase):
 
 @mock.patch('django.db.connection',
             bunchify({'tenant': {'name': 'My Test', 'client_name': 'test'}}))
-class TenantPropertiesContextProcessorTestCase(TestCase):
+class TenantPropertiesContextProcessorTestCase(SimpleTestCase):
 
     def setUp(self):
         self.rf = RequestFactory()
@@ -179,7 +179,7 @@ class TenantPropertiesContextProcessorTestCase(TestCase):
 
 from ..drf_permissions import TenantConditionalOpenClose
 
-class TestDRFTenantPermission(TestCase):
+class TestDRFTenantPermission(SimpleTestCase):
     """
         Verify the permission that can enable/disable API access based on a
         tenant property
@@ -217,7 +217,7 @@ class TestDRFTenantPermission(TestCase):
             self.failUnless(TenantConditionalOpenClose().has_permission(self.auth_user, None))
 
 
-class TestGetTenantProperties(TestCase):
+class TestGetTenantProperties(SimpleTestCase):
     @override_settings(TENANT_PROPERTIES="foobar.ponies.properties")
     def test_module_import(self):
         from tenant_extras.utils import get_tenant_properties
