@@ -1,4 +1,3 @@
-#!/usr/bin/python
 import os
 from setuptools import setup, find_packages
 import tenant_extras
@@ -20,28 +19,17 @@ setup(
     author="1%Club Developers",
     author_email="devteam@onepercentclub.com",
     install_requires=[
-        'Django <= 1.6.8',
-        'django-tenant-schemas >= 1.5.0',
+        'Django>=1.6.8',
+        'django-tenant-schemas>=1.5.0',
         'python-memcached>=1.53',
     ],
     tests_require={
         'bunch==1.0.1',
-        'django-nose==1.3',
+        'django-nose>=1.4',
         'django-setuptest==0.1.4',
         'mock==1.0.1',
-        'djangorestframework >= 2.3.14,<3.0'
+        'djangorestframework>=2.3.14'
     },
-    test_suite = "tenant_extras.runtests.runtests",
-    classifiers=[
-        'Environment :: Web Environment',
-        'Framework :: Django',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: None',
-        'Operating System :: OS Independent',
-        'Programming Language :: Python',
-        'Topic :: Internet :: WWW/HTTP',
-        'Topic :: Internet :: WWW/HTTP :: Dynamic Content'
-    ]
-
+    test_suite = "tenant_extras.runtests.runtests"
 )
 

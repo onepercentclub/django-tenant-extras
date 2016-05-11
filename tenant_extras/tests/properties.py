@@ -2,6 +2,7 @@ from django.conf import settings
 
 class Mock1Properties():
     tenant_properties = {
+        'CLOSED_SITE': False,
         'RECURRING_DONATIONS_ENABLED': False,
         'DONATIONS_ENABLED': True,
         'LANGUAGE_CODE': "en",
@@ -23,6 +24,7 @@ properties1 = Mock1Properties()
 
 class Mock2Properties():
     tenant_properties = {
+        'CLOSED_SITE': True,
         'RECURRING_DONATIONS_ENABLED': False,
         'DONATIONS_ENABLED': True,
         'LANGUAGE_CODE': "en",
