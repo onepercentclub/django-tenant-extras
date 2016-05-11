@@ -5,8 +5,5 @@ cache:
   - $HOME/.pip-cache/
 python:
 - '2.7'
-env:
-  matrix:
-  - DJANGO=django==1.6.8"
 script:
 - python ./setup.py test
