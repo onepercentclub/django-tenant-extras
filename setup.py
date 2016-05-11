@@ -20,7 +20,7 @@ setup(
     author="1%Club Developers",
     author_email="devteam@onepercentclub.com",
     install_requires=[
-        'Django <= 1.6.8',
+        'Django >= 1.6.8',
         'django-tenant-schemas >= 1.5.0',
         'python-memcached>=1.53',
     ],
