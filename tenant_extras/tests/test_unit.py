@@ -1,48 +1,19 @@
 import mock
 from mock import patch
-
 from bunch import bunchify
 
-from django.test import RequestFactory, TestCase
+from django.test import RequestFactory
+from django.test.testcases import SimpleTestCase
 from django.test.utils import override_settings
 from django.core.exceptions import ImproperlyConfigured
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse
 
 from ..middleware import TenantLocaleMiddleware
 
 
 @override_settings(MULTI_TENANT_DIR='/clients', INSTALLED_APPS=(),
-                   LOCALE_PATHS=())
-class TenantLocaleMiddlewareTests(TestCase):
-    def setUp(self):
-        super(TenantLocaleMiddlewareTests, self).setUp()
-
-        self.rf = RequestFactory()
-        self.middleware = TenantLocaleMiddleware()
-
-    def test_valid_tenant_locale(self):
-        with mock.patch("tenant_extras.middleware.connection") as mock_c, \
-             mock.patch("tenant_extras.middleware._translation") as mock_t, \
-             mock.patch("os.path.isdir", return_value=True):
-
-            mock_c.tenant = mock.Mock(client_name="tenant_a")
-            request = self.rf.get('/nl/')
-            result = self.middleware.process_request(request)
-
-            last_call_path = mock_t.call_args_list[-1][0][0]
-            self.assertEquals(last_call_path, '/clients/tenant_a/locale')
-
-            mock_c.tenant = mock.Mock(client_name="tenant_b")
-            request = self.rf.get('/nl/')
-            result = self.middleware.process_request(request)
-
-            last_call_path = mock_t.call_args_list[-1][0][0]
-            self.assertEquals(last_call_path, '/clients/tenant_b/locale')
-
-
-@override_settings(MULTI_TENANT_DIR='/clients', INSTALLED_APPS=(),
                    LOCALE_PATHS=(), LOCALE_REDIRECT_IGNORE=('/api', '/go'))
-class TenantLocaleMiddlewareRedirectTests(TestCase):
+class TenantLocaleMiddlewareRedirectTests(SimpleTestCase):
     def setUp(self):
         super(TenantLocaleMiddlewareRedirectTests, self).setUp()
 
@@ -80,7 +51,6 @@ class TenantLocaleMiddlewareRedirectTests(TestCase):
     def test_unsupported_language(self):
         request = self.rf.get('/be/')
         result = self._process_response(request)
-
         self.assertEqual(result.url, '/en/')
 
     def test_slash_with_anon_user(self):
@@ -122,7 +92,7 @@ class TenantLocaleMiddlewareRedirectTests(TestCase):
 
 @mock.patch('django.db.connection',
             bunchify({'tenant': {'name': 'My Test', 'client_name': 'test'}}))
-class ConfContextProcessorTestCase(TestCase):
+class ConfContextProcessorTestCase(SimpleTestCase):
 
     def setUp(self):
         self.rf = RequestFactory()
@@ -139,7 +109,7 @@ class ConfContextProcessorTestCase(TestCase):
 
 @mock.patch('django.db.connection',
             bunchify({'tenant': {'name': 'My Test', 'client_name': 'test'}}))
-class TenantPropertiesContextProcessorTestCase(TestCase):
+class TenantPropertiesContextProcessorTestCase(SimpleTestCase):
 
     def setUp(self):
         self.rf = RequestFactory()
@@ -179,7 +149,7 @@ class TenantPropertiesContextProcessorTestCase(TestCase):
 
 from ..drf_permissions import TenantConditionalOpenClose
 
-class TestDRFTenantPermission(TestCase):
+class TestDRFTenantPermission(SimpleTestCase):
     """
         Verify the permission that can enable/disable API access based on a
         tenant property
@@ -201,13 +171,10 @@ class TestDRFTenantPermission(TestCase):
             get_tenant_properties.return_value = False
             self.failUnless(TenantConditionalOpenClose().has_permission(self.unauth_user, None))
 
+    @override_settings(TENANT_PROPERTIES="tenant_extras.tests.properties.properties2")
     def test_api_closed_unauth(self):
         """ There is a tenant property and it's closed, user is not authenticated """
-        with mock.patch('tenant_extras.drf_permissions.get_tenant_properties') as get_tenant_properties:
-            get_tenant_properties.return_value = True
-
-
-            self.failIf(TenantConditionalOpenClose().has_permission(self.unauth_user, None))
+        self.failIf(TenantConditionalOpenClose().has_permission(self.unauth_user, None))
 
     def test_api_closed_auth(self):
         """ There is a tenant property and it's closed, user IS authenticated """
@@ -217,7 +184,7 @@ class TestDRFTenantPermission(TestCase):
             self.failUnless(TenantConditionalOpenClose().has_permission(self.auth_user, None))
 
 
-class TestGetTenantProperties(TestCase):
+class TestGetTenantProperties(SimpleTestCase):
     @override_settings(TENANT_PROPERTIES="foobar.ponies.properties")
     def test_module_import(self):
         from tenant_extras.utils import get_tenant_properties

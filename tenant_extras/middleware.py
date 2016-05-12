@@ -115,42 +115,10 @@ def tenant_translation(language, tenant_name, tenant_locale_path=None):
 class TenantLocaleMiddleware(_LocaleMiddleware):
 
     def __init__(self):
+        super(TenantLocaleMiddleware, self).__init__()
         self.lang_code = None
         self._supported_languages = dict(getattr(get_tenant_properties(), 'LANGUAGES')).keys()
-
-    def _is_supported_language(self, language_code):
-        """
-        Returns True if language_code is supported by request tenant.
-        """
-        supported_languages = dict(getattr(get_tenant_properties(), 'LANGUAGES')).keys()
-        try:
-            lang_code = get_supported_language_variant(language_code, supported_languages)
-            return True
-        except LookupError:
-            return False
-
-    def _get_browser_language(self, request):
-        """
-        Return language based on browser accept setting. Only tenant supported languages
-        will be matched.
-        """
-        browser_language_code = request.META.get('HTTP_ACCEPT_LANGUAGE', '')
-        supported_languages = dict(getattr(get_tenant_properties(), 'LANGUAGES')).keys()
-
-        for accept_lang, unused in parse_accept_lang_header(browser_language_code):
-            if accept_lang == '*':
-                break
-            try:
-                accept_lang = get_supported_language_variant(accept_lang, supported_languages)
-            except LookupError:
-                continue
-            else:
-                return accept_lang
-        try:
-            lang_code = getattr(get_tenant_properties(), 'LANGUAGE_CODE', None)
-            return get_supported_language_variant(lang_code, supported_languages)
-        except LookupError:
-            return settings.LANGUAGE_CODE
+        self._default_language = getattr(get_tenant_properties(), 'LANGUAGE_CODE')
 
     def _set_cookie(self, request, response):
         if self.lang_code != request.COOKIES.get(settings.LANGUAGE_COOKIE_NAME):
@@ -158,13 +126,13 @@ class TenantLocaleMiddleware(_LocaleMiddleware):
 
     def process_request(self, request):
         tenant_name = connection.tenant.client_name
-        site_locale = os.path.join(settings.MULTI_TENANT_DIR, tenant_name, 'locale')
+        site_locale = self._default_language
 
         check_path = self.is_language_prefix_patterns_used()
-        language = translation.get_language_from_request(
-            request, check_path=check_path)
+        language = translation.get_language_from_request(request, check_path=check_path)
         translation._trans._active.value = tenant_translation(language, tenant_name, site_locale)
         request.LANGUAGE_CODE = translation.get_language()
+        return super(TenantLocaleMiddleware, self).process_request(request)
 
     def process_response(self, request, response):
         """
@@ -195,22 +163,12 @@ class TenantLocaleMiddleware(_LocaleMiddleware):
         if not self.is_language_prefix_patterns_used() or (ignore_paths and request.path.startswith(ignore_paths)):
             return response
 
-        _default_language = getattr(get_tenant_properties(), 'LANGUAGE_CODE', None)
         language_code_prefix_re = re.compile(r'^/(([a-z]{2})(-[A-Z]{2})?)(/|$)')
         regex_match = language_code_prefix_re.match(request.path)
         lang_code = ''
 
         if regex_match:
             current_url_lang_prefix = regex_match.group(2)
-            try:
-                # if the language requested is valid and supported then return early
-                lang_code = get_supported_language_variant(current_url_lang_prefix)
-                if self._is_supported_language(lang_code):
-                  self.lang_code = lang_code
-                  self._set_cookie(request, response)
-                  return response
-            except LookupError:
-                pass
         else:
             current_url_lang_prefix = ''
 
@@ -230,27 +188,18 @@ class TenantLocaleMiddleware(_LocaleMiddleware):
             if lang_cookie:
                 # use language in cookie if defined
                 lang_code = lang_cookie
-
-            elif self._is_supported_language(primary_language):
+            elif primary_language in self._supported_languages:
                 lang_code = primary_language
         else:
-            # Options:
-            # - redirect to cookie language
-            # - redirect browser accepted language
-            browser_language = self._get_browser_language(request)
-
             if lang_cookie:
                 # use language in cookie if defined
                 lang_code = lang_cookie
-
-            elif browser_language:
-                lang_code = browser_language
 
         # Finally:
         # - set default site language if lang_code not already set
         if not lang_code:
             # fall back to site default
-            lang_code = _default_language
+            lang_code = self._default_language
 
         # Set the lang_code on the instance for use in the response / cookie
         self.lang_code = lang_code
