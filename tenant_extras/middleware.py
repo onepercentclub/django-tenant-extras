@@ -126,17 +126,14 @@ class TenantLocaleMiddleware(LocaleMiddleware):
 
         ignore_paths = getattr(settings, 'LOCALE_REDIRECT_IGNORE', None)
 
-        supported_languages = dict(getattr(get_tenant_properties(), 'LANGUAGES')).keys()
-
         # Get language from path
         if self.is_language_prefix_patterns_used():
             language_from_path = translation.get_language_from_path(
                 request.path_info
             )
-
-        # If ignore paths or language set, then just pass the response
-        if language_from_path or (ignore_paths and request.path.startswith(ignore_paths)):
-            return response
+            # If ignore paths or language set, then just pass the response
+            if language_from_path or (ignore_paths and request.path.startswith(ignore_paths)):
+                return response
 
         # Redirect to default tenant language
         lang_code = getattr(get_tenant_properties(), 'LANGUAGE_CODE', None)
