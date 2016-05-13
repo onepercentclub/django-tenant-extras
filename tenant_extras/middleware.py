@@ -1,7 +1,6 @@
 "This is locale middleware on top of Django's default LocaleMiddleware."
 import os
 import sys
-import re
 import copy
 
 import gettext as gettext_module
@@ -10,13 +9,10 @@ from django import http
 from django.conf import settings
 
 from importlib import import_module
-from django.middleware.locale import LocaleMiddleware as _LocaleMiddleware
-from django.utils.translation.trans_real import (
-                            to_locale, DjangoTranslation, parse_accept_lang_header,
-                            get_supported_language_variant)
+from django.middleware.locale import LocaleMiddleware
+from django.utils.translation.trans_real import to_locale, DjangoTranslation
 from django.utils import translation
 from django.utils._os import upath
-from django.db import connection
 
 from .utils import get_tenant_properties
 
@@ -112,164 +108,38 @@ def tenant_translation(language, tenant_name, tenant_locale_path=None):
     return current_translation
 
 
-class TenantLocaleMiddleware(_LocaleMiddleware):
+class TenantLocaleMiddleware(LocaleMiddleware):
+    """
+    NOTE:
+    This class was severly stripped of logic because that has moved to nginx conf.
+    It's main purpose is to redirect to
 
-    def __init__(self):
-        self.lang_code = None
-        self._supported_languages = dict(getattr(get_tenant_properties(), 'LANGUAGES')).keys()
-
-    def _is_supported_language(self, language_code):
-        """
-        Returns True if language_code is supported by request tenant.
-        """
-        supported_languages = dict(getattr(get_tenant_properties(), 'LANGUAGES')).keys()
-        try:
-            lang_code = get_supported_language_variant(language_code, supported_languages)
-            return True
-        except LookupError:
-            return False
-
-    def _get_browser_language(self, request):
-        """
-        Return language based on browser accept setting. Only tenant supported languages
-        will be matched.
-        """
-        browser_language_code = request.META.get('HTTP_ACCEPT_LANGUAGE', '')
-        supported_languages = dict(getattr(get_tenant_properties(), 'LANGUAGES')).keys()
-
-        for accept_lang, unused in parse_accept_lang_header(browser_language_code):
-            if accept_lang == '*':
-                break
-            try:
-                accept_lang = get_supported_language_variant(accept_lang, supported_languages)
-            except LookupError:
-                continue
-            else:
-                return accept_lang
-        try:
-            lang_code = getattr(get_tenant_properties(), 'LANGUAGE_CODE', None)
-            return get_supported_language_variant(lang_code, supported_languages)
-        except LookupError:
-            return settings.LANGUAGE_CODE
-
-    def _set_cookie(self, request, response):
-        if self.lang_code != request.COOKIES.get(settings.LANGUAGE_COOKIE_NAME):
-            response.set_cookie(settings.LANGUAGE_COOKIE_NAME, self.lang_code)
-
-    def process_request(self, request):
-        tenant_name = connection.tenant.client_name
-        site_locale = os.path.join(settings.MULTI_TENANT_DIR, tenant_name, 'locale')
-
-        check_path = self.is_language_prefix_patterns_used()
-        language = translation.get_language_from_request(
-            request, check_path=check_path)
-        translation._trans._active.value = tenant_translation(language, tenant_name, site_locale)
-        request.LANGUAGE_CODE = translation.get_language()
+    """
 
     def process_response(self, request, response):
         """
-        This builds strongly on django's Locale middleware, so check
-        if it's enabled.
-
-        This middleware is only relevant with i18n_patterns and the request
-        is not to a 'docs', 'api' or 'go' endpoint.
-
-        Options:
-          Supported Language: respond without checking further
-          User Authenticated:
-            Unsupported Language or No Language (eg '/'):
-              - redirect to cookie language
-              - redirect to users primary language
-              - redirect to default site language
-          User Unauthenticated:
-            Unsupported Language or No Language (eg '/'):
-              - redirect to cookie language
-              - redirect browser accepted language
-              - redirect to default site language
+        Redirect to default tenant language if none is set.
         """
         if response.status_code in [301, 302]:
             # No need to check for a locale redirect if the response is already a redirect.
             return response
 
         ignore_paths = getattr(settings, 'LOCALE_REDIRECT_IGNORE', None)
-        if not self.is_language_prefix_patterns_used() or (ignore_paths and request.path.startswith(ignore_paths)):
+
+        supported_languages = dict(getattr(get_tenant_properties(), 'LANGUAGES')).keys()
+
+        # Get language from path
+        if self.is_language_prefix_patterns_used():
+            language_from_path = translation.get_language_from_path(
+                request.path_info
+            )
+
+        # If ignore paths or language set, then just pass the response
+        if language_from_path or (ignore_paths and request.path.startswith(ignore_paths)):
             return response
 
-        _default_language = getattr(get_tenant_properties(), 'LANGUAGE_CODE', None)
-        language_code_prefix_re = re.compile(r'^/(([a-z]{2})(-[A-Z]{2})?)(/|$)')
-        regex_match = language_code_prefix_re.match(request.path)
-        lang_code = ''
+        # Redirect to default tenant language
+        lang_code = getattr(get_tenant_properties(), 'LANGUAGE_CODE', None)
+        new_location = '/{0}{1}'.format(lang_code, request.get_full_path())
 
-        if regex_match:
-            current_url_lang_prefix = regex_match.group(2)
-            try:
-                # if the language requested is valid and supported then return early
-                lang_code = get_supported_language_variant(current_url_lang_prefix)
-                if self._is_supported_language(lang_code):
-                  self.lang_code = lang_code
-                  self._set_cookie(request, response)
-                  return response
-            except LookupError:
-                pass
-        else:
-            current_url_lang_prefix = ''
-
-        try:
-            authenticated = request.user.is_authenticated()
-        except AttributeError:
-            authenticated = False
-
-        lang_cookie = request.COOKIES.get(settings.LANGUAGE_COOKIE_NAME)
-
-        if authenticated:
-            # Options:
-            # - redirect to cookie language
-            # - redirect to users primary language
-            primary_language = request.user.primary_language
-
-            if lang_cookie:
-                # use language in cookie if defined
-                lang_code = lang_cookie
-
-            elif self._is_supported_language(primary_language):
-                lang_code = primary_language
-        else:
-            # Options:
-            # - redirect to cookie language
-            # - redirect browser accepted language
-            browser_language = self._get_browser_language(request)
-
-            if lang_cookie:
-                # use language in cookie if defined
-                lang_code = lang_cookie
-
-            elif browser_language:
-                lang_code = browser_language
-
-        # Finally:
-        # - set default site language if lang_code not already set
-        if not lang_code:
-            # fall back to site default
-            lang_code = _default_language
-
-        # Set the lang_code on the instance for use in the response / cookie
-        self.lang_code = lang_code
-        # If the lang_code is different to the current url prefix then redirect.
-        if lang_code and lang_code != current_url_lang_prefix:
-            if current_url_lang_prefix:
-                # Replace current url language prefix
-                expected_url_lang_prefix = '/{0}/'.format(lang_code)
-                new_location = request.get_full_path().replace(
-                    '/{0}/'.format(current_url_lang_prefix), expected_url_lang_prefix)
-            else:
-                new_location = '/{0}{1}'.format(lang_code, request.get_full_path())
-
-            return http.HttpResponseRedirect(new_location)
-
-        self._set_cookie(request, response)
-        return super(TenantLocaleMiddleware, self).process_response(request, response)
-
-
-    # re-use the original is_language_prefix_patterns_used function
-    mw = _LocaleMiddleware()
-    is_language_prefix_patterns_used = mw.is_language_prefix_patterns_used
+        return http.HttpResponseRedirect(new_location)
