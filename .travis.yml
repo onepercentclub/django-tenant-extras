@@ -8,5 +8,7 @@ python:
 env:
   matrix:
   - DJANGO=django==1.6.8"
+  matrix:
+  - DJANGO=django==1.9.6"
 script:
 - python ./setup.py test

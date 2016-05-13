@@ -26,7 +26,7 @@ setup(
     ],
     tests_require={
         'bunch==1.0.1',
-        'django-nose==1.4',
+        'django-nose>=1.4',
         'django-setuptest==0.1.4',
         'mock==1.0.1',
         'djangorestframework>=2.3.14'
