@@ -1,31 +1,50 @@
 #!/usr/bin/env python
-import sys, os
+import os
+import sys
 
-from django.conf import settings
-from django.core.management import call_command
+import coverage
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
-if not settings.configured:
-    settings.configure(
-        DATABASES={'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': os.path.join(BASE_DIR, 'db.sqlite3')}},
-        INSTALLED_APPS=[
-            'django_nose',
-            'tenant_extras',
-            'tenant_extras.tests'
-        ],
-        TENANT_PROPERTIES = "tenant_extras.tests.properties.properties1",
-        NOSE_ARGS = ['--nocapture', '--nologcapture',],
-        ROOT_URLCONF='tenant_extras.tests.urls'
-    )
 
-from django_nose import NoseTestSuiteRunner
+def runtests(args=None):
+    test_dir = os.path.dirname(__file__)
+    sys.path.insert(0, test_dir)
 
-def runtests(*test_labels):
-    runner = NoseTestSuiteRunner(verbosity=1, interactive=True)
-    failures = runner.run_tests(test_labels)
+    import django
+    from django.test.utils import get_runner
+    from django.conf import settings
+
+    if not settings.configured:
+        settings.configure(
+            DATABASES={'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': os.path.join(BASE_DIR, 'db.sqlite3')}},
+            INSTALLED_APPS=[
+                'django.contrib.sites',
+                'django_nose',
+                'tenant_extras',
+                'tenant_extras.tests'
+            ],
+            TENANT_PROPERTIES = "tenant_extras.tests.properties.properties1",
+            NOSE_ARGS = ['--nocapture', '--nologcapture',],
+            ROOT_URLCONF='tenant_extras.tests.urls'
+        )
+
+    django.setup()
+
+    cov = coverage.Coverage()
+    cov.start()
+
+    TestRunner = get_runner(settings)
+    test_runner = TestRunner(verbosity=1, interactive=True)
+    args = args or ['.']
+    failures = test_runner.run_tests(args)
+
+    cov.stop()
+    cov.save()
+    if os.getenv('HTML_REPORT'):
+        cov.html_report()
+
     sys.exit(failures)
 
-
 if __name__ == '__main__':
-    runtests(*sys.argv[1:])
+    runtests(sys.argv[1:])
