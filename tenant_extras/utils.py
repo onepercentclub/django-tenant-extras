@@ -1,11 +1,8 @@
 import os
 
-from contextlib import contextmanager
-
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.db import connection
-from django.contrib.sites.models import Site
 from django.utils import translation
 
 
@@ -40,6 +37,7 @@ def get_tenant_properties(property=None):
             "Missing / undefined property '{0}'".format(property))
 
     return props
+
 
 class TenantLanguage():
 

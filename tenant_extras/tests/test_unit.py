@@ -10,36 +10,6 @@ from django.http import HttpResponse, HttpResponseRedirect
 
 from ..middleware import TenantLocaleMiddleware
 
-
-@override_settings(MULTI_TENANT_DIR='/clients', INSTALLED_APPS=(),
-                   LOCALE_PATHS=())
-class TenantLocaleMiddlewareTests(TestCase):
-    def setUp(self):
-        super(TenantLocaleMiddlewareTests, self).setUp()
-
-        self.rf = RequestFactory()
-        self.middleware = TenantLocaleMiddleware()
-
-    def test_valid_tenant_locale(self):
-        with mock.patch("tenant_extras.middleware.connection") as mock_c, \
-             mock.patch("tenant_extras.middleware._translation") as mock_t, \
-             mock.patch("os.path.isdir", return_value=True):
-
-            mock_c.tenant = mock.Mock(client_name="tenant_a")
-            request = self.rf.get('/nl/')
-            result = self.middleware.process_request(request)
-
-            last_call_path = mock_t.call_args_list[-1][0][0]
-            self.assertEquals(last_call_path, '/clients/tenant_a/locale')
-
-            mock_c.tenant = mock.Mock(client_name="tenant_b")
-            request = self.rf.get('/nl/')
-            result = self.middleware.process_request(request)
-
-            last_call_path = mock_t.call_args_list[-1][0][0]
-            self.assertEquals(last_call_path, '/clients/tenant_b/locale')
-
-
 @override_settings(MULTI_TENANT_DIR='/clients', INSTALLED_APPS=(),
                    LOCALE_PATHS=(), LOCALE_REDIRECT_IGNORE=('/api', '/go'))
 class TenantLocaleMiddlewareRedirectTests(TestCase):
@@ -77,16 +47,9 @@ class TenantLocaleMiddlewareRedirectTests(TestCase):
 
         self.assertEqual(result.url, '/en/projects/1')
 
-    def test_unsupported_language(self):
-        request = self.rf.get('/be/')
-        result = self._process_response(request)
-
-        self.assertEqual(result.url, '/en/')
-
     def test_slash_with_anon_user(self):
         request = self.rf.get('/')
         result = self._process_response(request)
-
         self.assertEqual(result.url, '/en/')
 
     def test_nl_with_anon_user(self):
@@ -95,23 +58,6 @@ class TenantLocaleMiddlewareRedirectTests(TestCase):
 
         self.assertIsInstance(result, HttpResponse,
                    'Should not alter the request if language set in url')
-
-    def test_cookie_with_anon_user(self):
-        request = self.rf.get('/')
-        request.COOKIES['django_language'] = 'nl'
-        result = self._process_response(request)
-
-        self.assertEqual(result.url, '/nl/')
-
-    def test_cookie_with_language_and_anon_user(self):
-        request = self.rf.get('/en/')
-        request.COOKIES['django_language'] = 'nl'
-        result = self._process_response(request)
-
-        # If user requests specific langauge then it will
-        # override the language in the cookie => no redirect.
-        self.assertIsInstance(result, HttpResponse,
-          'Cookie language setting should not overwrite request language')
 
     def test_admin_path_with_anon_user(self):
         request = self.rf.get('/admin')
