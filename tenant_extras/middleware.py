@@ -127,7 +127,7 @@ class TenantLocaleMiddleware(LocaleMiddleware):
         ignore_paths = getattr(settings, 'LOCALE_REDIRECT_IGNORE', None)
 
         # Get language from path
-        if self.is_language_prefix_patterns_used():
+        if self.is_language_prefix_patterns_used:
             language_from_path = translation.get_language_from_path(
                 request.path_info
             )
