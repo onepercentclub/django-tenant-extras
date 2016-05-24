@@ -5,10 +5,5 @@ cache:
   - $HOME/.pip-cache/
 python:
 - '2.7'
-env:
-  matrix:
-  - DJANGO=django==1.9.6"
-install:
-- pip install -e .[test] --process-dependency-links --trusted-host github.com
 script:
 - python ./setup.py test
