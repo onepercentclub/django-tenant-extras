@@ -14,7 +14,7 @@ def get_tenant_properties(property=None):
     properties_path = getattr(settings, 'TENANT_PROPERTIES')
 
     parts = properties_path.split('.')
-    module = '.'.join([parts[i] for i in range(0,len(parts)-1)])
+    module = '.'.join([parts[i] for i in range(0, len(parts) - 1)])
     properties = parts[len(parts) - 1]
 
     try:
@@ -49,10 +49,8 @@ class TenantLanguage():
         from .middleware import tenant_translation
 
         tenant_name = connection.tenant.client_name
-        site_locale = os.path.join(settings.MULTI_TENANT_DIR, tenant_name, 'locale')
-        tenant_name = connection.tenant.client_name
-
-        translation._trans._active.value = tenant_translation(self.language, tenant_name, site_locale)
+        translation._trans._active.value = tenant_translation(self.language,
+                                                              tenant_name)
 
         return True
 
