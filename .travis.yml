@@ -8,5 +8,7 @@ python:
 env:
   matrix:
   - DJANGO=django==1.9.6"
+install:
+- pip install -e .[test] --process-dependency-links --trusted-host github.com
 script:
 - python ./setup.py test
