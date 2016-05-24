@@ -1,14 +1,21 @@
+import os
 import mock
 from mock import patch
 
 from bunch import bunchify
 
+from django.utils.translation import ugettext as _
+from django.conf import settings
 from django.test import RequestFactory, TestCase
 from django.test.utils import override_settings
 from django.core.exceptions import ImproperlyConfigured
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse
+from django.db import connection
 
+from ..drf_permissions import TenantConditionalOpenClose
 from ..middleware import TenantLocaleMiddleware
+from ..utils import TenantLanguage
+
 
 @override_settings(MULTI_TENANT_DIR='/clients', INSTALLED_APPS=(),
                    LOCALE_PATHS=(), LOCALE_REDIRECT_IGNORE=('/api', '/go'))
@@ -83,6 +90,49 @@ class ConfContextProcessorTestCase(TestCase):
         self.assertEqual(context['COMPRESS_TEMPLATES'], False)
 
 
+@override_settings(MULTI_TENANT_DIR=os.path.join(settings.PROJECT_ROOT,
+                   'tests', 'tenants'),)
+class TenantLocaleTestCase(TestCase):
+
+    def setUp(self):
+        self.tenant1 = bunchify({
+            'name': 'My Test',
+            'client_name': 'tenant1'
+        })
+
+        self.tenant2 = bunchify({
+            'name': 'My Test',
+            'client_name': 'tenant2'
+        })
+
+    def test_valid_tenant_language(self):
+        connection.tenant = self.tenant1
+        with TenantLanguage('en'):
+            self.assertEqual(_('Tenant Name'), 'Tenant 1 EN')
+
+        with TenantLanguage('nl'):
+            self.assertEqual(_('Tenant Name'), 'Tenant 1 NL')
+
+        with TenantLanguage('sp'):
+            self.assertEqual(_('Tenant Name'), 'Tenant 1 EN')
+
+    def test_tenant_language_fallback(self):
+        connection.tenant = self.tenant1
+        with TenantLanguage('sp'):
+            self.assertEqual(_('Tenant Name'), 'Tenant 1 EN')
+
+    def test_multi_tenant_languages(self):
+        connection.tenant = self.tenant1
+        with TenantLanguage('en'):
+            # This will cache the en locale for tenant1
+            pass
+
+        connection.tenant = self.tenant2
+        with TenantLanguage('en'):
+            self.assertEqual(_('Tenant Name'), 'Tenant 2 EN',
+                             'Tenant 2 should not have translations from Tenant 1')
+
+
 @mock.patch('django.db.connection',
             bunchify({'tenant': {'name': 'My Test', 'client_name': 'test'}}))
 class TenantPropertiesContextProcessorTestCase(TestCase):
@@ -123,7 +173,6 @@ class TenantPropertiesContextProcessorTestCase(TestCase):
             context = tenant_properties(self.rf)
             self.assertEqual(context, {})
 
-from ..drf_permissions import TenantConditionalOpenClose
 
 class TestDRFTenantPermission(TestCase):
     """
@@ -131,8 +180,8 @@ class TestDRFTenantPermission(TestCase):
         tenant property
     """
 
-    auth_user = mock.Mock(**{"user.is_authenticated.return_value":True})
-    unauth_user = mock.Mock(**{"user.is_authenticated.return_value":False})
+    auth_user = mock.Mock(**{"user.is_authenticated.return_value": True})
+    unauth_user = mock.Mock(**{"user.is_authenticated.return_value": False})
 
     def test_missing_setting(self):
         """ No tenant property at all - default to public """
@@ -151,7 +200,6 @@ class TestDRFTenantPermission(TestCase):
         """ There is a tenant property and it's closed, user is not authenticated """
         with mock.patch('tenant_extras.drf_permissions.get_tenant_properties') as get_tenant_properties:
             get_tenant_properties.return_value = True
-
 
             self.failIf(TenantConditionalOpenClose().has_permission(self.unauth_user, None))
 
