@@ -20,18 +20,17 @@ setup(
     author="1%Club Developers",
     author_email="devteam@onepercentclub.com",
     install_requires=[
-        'Django>=1.6.8',
+        'Django>=1.9,<1.10',
         'django-tenant-schemas>=1.5.0',
         'python-memcached>=1.53',
     ],
     tests_require={
         'bunch==1.0.1',
-        'django-nose>=1.3',
-        'django-setuptest==0.1.4',
-        'mock==1.0.1',
-        'djangorestframework>=2.3.14'
+        'django-nose>=1.4.3',
+        'django-setuptest==0.2.1',
+        'djangorestframework>=3.3,<3.4',
     },
-    test_suite = "tenant_extras.runtests.runtests",
+    test_suite="tenant_extras.runtests.runtests",
     classifiers=[
         'Environment :: Web Environment',
         'Framework :: Django',
@@ -43,4 +42,3 @@ setup(
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content'
     ]
 )
-

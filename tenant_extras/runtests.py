@@ -17,15 +17,21 @@ def runtests(args=None):
 
     if not settings.configured:
         settings.configure(
-            DATABASES={'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': os.path.join(BASE_DIR, 'db.sqlite3')}},
+            PROJECT_ROOT=os.path.abspath(test_dir),
+            DATABASES={
+                'default': {
+                    'ENGINE': 'django.db.backends.sqlite3',
+                    'NAME': os.path.join(BASE_DIR, 'db.sqlite3')
+                }
+            },
             INSTALLED_APPS=[
                 'django.contrib.sites',
                 'django_nose',
                 'tenant_extras',
                 'tenant_extras.tests'
             ],
-            TENANT_PROPERTIES = "tenant_extras.tests.properties.properties1",
-            NOSE_ARGS = ['--nocapture', '--nologcapture',],
+            TENANT_PROPERTIES="tenant_extras.tests.properties.properties1",
+            NOSE_ARGS=['--nocapture', '--nologcapture'],
             ROOT_URLCONF='tenant_extras.tests.urls'
         )
 

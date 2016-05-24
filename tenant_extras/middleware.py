@@ -8,38 +8,54 @@ import gettext as gettext_module
 from django import http
 from django.conf import settings
 
-from importlib import import_module
 from django.middleware.locale import LocaleMiddleware
-from django.utils.translation.trans_real import to_locale, DjangoTranslation
+from django.utils.translation.trans_real import DjangoTranslation as DjangoTranslationOriginal
 from django.utils import translation
-from django.utils._os import upath
 
 from .utils import get_tenant_properties
 
 _tenants = {}
+_translations = {}
 
 
-def _translation(path, loc, lang):
-    try:
-        t = gettext_module.translation('django', path, [loc],
-                                       DjangoTranslation)
-        # gettext will not give us a deep copy. This means _merge() will update
-        # the original, global translation object.
-        t = copy.deepcopy(t)
-        t.set_language(lang)
-        return t
-    except IOError:
-        return None
-
-
-def tenant_translation(language, tenant_name, tenant_locale_path=None):
+class DjangoTranslation(DjangoTranslationOriginal):
     """
-    This is taken from the Django translation utils
-    https://github.com/django/django/blob/1.6.8/django/utils/translation/trans_real.py#L101-L180
+    This class sets up the GNUTranslations context with regard to output
+    charset.
 
-    It has been altered to handle tenant specific locale file paths.
+    This translation object will be constructed out of multiple GNUTranslations
+    objects by merging their catalogs. It will construct an object for the
+    requested language and add a fallback to the default language, if it's
+    different from the requested language.
     """
+    def __init__(self, language, tenant_name):
+        self.tenant_name = tenant_name
+        DjangoTranslationOriginal.__init__(self, language)
 
+    def _add_local_translations(self):
+        """Merges translations defined for tenant and standard locale."""
+        locale_paths = [os.path.join(settings.MULTI_TENANT_DIR, self.tenant_name, 'locale')]
+        locale_paths.extend(settings.LOCALE_PATHS)
+
+        for localedir in reversed(locale_paths):
+            translation = self._new_gnu_trans(localedir)
+            self.merge(translation)
+
+    def _add_fallback(self):
+        """Sets the GNUTranslations() fallback with the default language."""
+        # Don't set a fallback for the default language or any English variant
+        # (as it's empty, so it'll ALWAYS fall back to the default language)
+        lang_code = getattr(get_tenant_properties(), 'LANGUAGE_CODE', None)
+        if self.__language == lang_code or self.__language.startswith('en'):
+            return
+        default_translation = tenant_translation(lang_code, self.tenant_name)
+        self.add_fallback(default_translation)
+
+
+def tenant_translation(language, tenant_name):
+    """
+    Returns a translation object for the given tenant name and language.
+    """
     global _tenants
     if tenant_name not in _tenants:
         _tenants[tenant_name] = {}
@@ -47,65 +63,11 @@ def tenant_translation(language, tenant_name, tenant_locale_path=None):
     _translations = _tenants[tenant_name]
 
     t = _translations.get(language, None)
-    if t is not None:
-        return t
+    if t is None:
+        t = DjangoTranslation(language, tenant_name)
+        _translations[language] = t
 
-    globalpath = os.path.join(os.path.dirname(upath(sys.modules[settings.__module__].__file__)), 'locale')
-
-    def _fetch(lang, fallback=None):
-        res = _translations.get(lang, None)
-        if res is not None:
-            return res
-
-        loc = to_locale(lang)
-        res = _translation(globalpath, loc, lang)
-
-        # We want to ensure that, for example,  "en-gb" and "en-us" don't share
-        # the same translation object (thus, merging en-us with a local update
-        # doesn't affect en-gb), even though they will both use the core "en"
-        # translation. So we have to subvert Python's internal gettext caching.
-        base_lang = lambda x: x.split('-', 1)[0]
-        if base_lang(lang) in [base_lang(trans) for trans in list(_translations)]:
-            res._info = res._info.copy()
-            res._catalog = res._catalog.copy()
-
-        def _merge(path):
-            t = _translation(path, loc, lang)
-            if t is not None:
-                if res is None:
-                    return t
-                else:
-                    res.merge(t)
-            return res
-
-        for appname in reversed(settings.INSTALLED_APPS):
-            app = import_module(appname)
-            apppath = os.path.join(os.path.dirname(upath(app.__file__)), 'locale')
-
-            if os.path.isdir(apppath):
-                res = _merge(apppath)
-
-        for localepath in reversed(settings.LOCALE_PATHS):
-            if os.path.isdir(localepath):
-                res = _merge(localepath)
-
-        if tenant_locale_path:
-            if os.path.isdir(tenant_locale_path):
-                res = _merge(tenant_locale_path)
-
-        if res is None:
-            if fallback is not None:
-                res = fallback
-            else:
-                return gettext_module.NullTranslations()
-        _translations[lang] = res
-        _tenants[tenant_name] = _translations
-
-        return res
-
-    default_translation = _fetch(getattr(get_tenant_properties(), 'LANGUAGE_CODE', None))
-    current_translation = _fetch(language, fallback=default_translation)
-    return current_translation
+    return t
 
 
 class TenantLocaleMiddleware(LocaleMiddleware):
