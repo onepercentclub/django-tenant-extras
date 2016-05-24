@@ -28,7 +28,6 @@ setup(
         'bunch==1.0.1',
         'django-nose>=1.4.3',
         'django-setuptest==0.2.1',
-        'mock==1.3.0',
         'djangorestframework>=3.3,<3.4',
     },
     test_suite="tenant_extras.runtests.runtests",
