@@ -49,6 +49,7 @@ class TenantLanguage():
         from .middleware import tenant_translation
 
         tenant_name = connection.tenant.client_name
+        translation.activate(self.language)
         translation._trans._active.value = tenant_translation(self.language,
                                                               tenant_name)
 
