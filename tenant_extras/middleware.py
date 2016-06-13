@@ -1,12 +1,9 @@
 "This is locale middleware on top of Django's default LocaleMiddleware."
 import os
-import sys
-import copy
-
-import gettext as gettext_module
 
 from django import http
 from django.conf import settings
+from django.db import connection
 
 from django.middleware.locale import LocaleMiddleware
 from django.utils.translation.trans_real import DjangoTranslation as DjangoTranslationOriginal
@@ -77,6 +74,15 @@ class TenantLocaleMiddleware(LocaleMiddleware):
     It's main purpose is to redirect to
 
     """
+    def process_request(self, request):
+        tenant_name = connection.tenant.client_name
+        site_locale = os.path.join(settings.MULTI_TENANT_DIR, tenant_name, 'locale')
+
+        check_path = self.is_language_prefix_patterns_used
+        language = translation.get_language_from_request(
+            request, check_path=check_path)
+        translation._trans._active.value = tenant_translation(language, tenant_name)
+        request.LANGUAGE_CODE = translation.get_language()
 
     def process_response(self, request, response):
         """
