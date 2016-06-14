@@ -19,13 +19,13 @@ class Command(BaseCommand):
 
     def __init__(self):
         self.option_list = self.option_list + (
-            make_option('--tenant', dest='tenant', default=None, 
+            make_option('--tenant', dest='tenant', default=None,
                     help="Generate translation messages for tenant."),
             make_option('--locale', '-l', dest='locale', action='append',
                     help='locale(s) to process (e.g. de_AT). Default is to process all. Can be used multiple times.'),
             make_option('--compile', '-c', dest='compile', action='store_true', default=False,
                     help='compile the .po to .mo files.'),
-            make_option('--pocmd', '-d', dest='pocmd', default='makepo', 
+            make_option('--pocmd', '-d', dest='pocmd', default='makepo',
                     help='alternative command to generate po files'),
         )
 
@@ -33,7 +33,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         default_ignore = ['*.orig', '.*', '.git', '*~', '*.pyc', '*.egg', '*.egg-info']
-        default_ignore += ['tests', 'static', 'build', 'node_modules', 'bower_components', 'sass', 'static', 'private', 'env', 'build', 'dist', 'frontend']
+        default_ignore += ['tests', 'static', 'build', 'node_modules', 'bower_components', 'sass', 'static', 'private', 'env', 'build', 'dist', 'frontend', 'tenants']
 
         self.verbosity = options.get('verbosity')
         self.compile = options.get('compile')
@@ -43,62 +43,33 @@ class Command(BaseCommand):
         if not self.locale:
             self.locale = ['en', 'en_GB', 'nl', 'fr']
 
-        # Find bb_location
-        out = StringIO.StringIO()
-        sys.stdout = out
-        pip.main(['show', 'bluebottle'])
-        sys.stdout = sys.__stdout__
-        self.bb_location = os.path.join(re.search(r'^Location:\s(.*)$', out.getvalue(), re.MULTILINE).groups()[0], 'bluebottle')
-
         # find tenants
         tenant_dir = getattr(settings, 'MULTI_TENANT_DIR', None)
         tenants = [f for f in os.listdir(tenant_dir) if os.path.isdir(os.path.join(tenant_dir, f))]
 
+        # Generate translation file for django
+        self.stdout.write('Translating:\r\n> Making Django po files...')
+
+        # Generate po file for tenant
+        call_command(self.pocmd,
+                     verbosity=self.verbosity,
+                     domain='django',
+                     all=True,
+                     no_wrap=True,
+                     no_obsolete=True,
+                     keep_pot=False,
+                     extensions=['html', 'py', 'hbs', 'txt'],
+                     ignore_patterns=default_ignore,
+                     include_paths=['bluebottle'],
+                     locale=self.locale)
+
         if options.get('tenant'):
             tenant = options.get('tenant')
-
-            ignore_patterns = default_ignore + [t for t in tenants if t != tenant]
-            self._translate_tenant(tenant, ignore_patterns=ignore_patterns)
-
             self._handle_success(tenant)
 
         else:
             for tenant in tenants:
-                ignore_patterns = default_ignore + [t for t in tenants if t != tenant]
-                self._translate_tenant(tenant, ignore_patterns=ignore_patterns)
-
                 self._handle_success(tenant)
-
-    def _translate_tenant(self, tenant, ignore_patterns=None):
-        # Generate translation file for django
-        self.stdout.write('Translating {}:\r\n> Making Django po files...'.format(tenant))
-
-        # Create the locale directory for tenant if not present.
-        tenant_locale_dir = os.path.join(getattr(settings, 'MULTI_TENANT_DIR', None), tenant, 'locale')
-        if not os.path.isdir(tenant_locale_dir):
-            os.mkdir(tenant_locale_dir)
-
-        # Generate po file for tenant
-        call_command(self.pocmd,
-            verbosity=self.verbosity,
-            tenant=tenant,
-            domain='django',
-            all=True,
-            no_wrap=True,
-            no_obsolete=True,
-            keep_pot=False,
-            extensions=['html', 'py', 'hbs', 'txt'],
-            ignore_patterns=ignore_patterns,
-            include_paths=[self.bb_location],
-            locale=self.locale,)
-
-
-        if self.compile:
-            # Compile .po files to .mo
-            self.stdout.write('> Compiling po files...')
-            call_command('compilepo',
-                locale=self.locale,
-                tenant=tenant)
 
     def _handle_success(self, tenant, **options):
         pass
