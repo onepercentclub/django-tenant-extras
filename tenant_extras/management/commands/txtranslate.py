@@ -17,7 +17,7 @@ class Command(BaseCommand):
 
     def __init__(self):
         self.option_list = self.option_list + (
-            make_option('--push', '-p', dest='push', action='store_true', 
+            make_option('--push', '-p', dest='push', action='store_true',
                 default=False, help='Push translations to Transifex.'),
         )
 
