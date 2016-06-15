@@ -1,14 +1,14 @@
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from django.template.base import TemplateDoesNotExist
-from django.template.loader import BaseLoader
+from django.template.exceptions import TemplateDoesNotExist
+from django.template.loaders.base import Loader
 from django.utils._os import safe_join
 from django.db import connection
 
 from tenant_schemas.postgresql_backend.base import FakeTenant
 
 
-class FilesystemLoader(BaseLoader):
+class FilesystemLoader(Loader):
     """
     Based on FileSystemLoader from django-tenant-schemas:
     https://github.com/bernardopires/django-tenant-schemas/blob/master/tenant_schemas/template_loaders.py#L79
