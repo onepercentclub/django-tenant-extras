@@ -3,7 +3,7 @@ from django.core import exceptions
 from django.core.management.base import BaseCommand
 from django.utils.encoding import force_str
 from django.utils.six.moves import input
-from tenant_schemas.utils import get_tenant_model
+from django_tenants.utils import get_tenant_model
 from django.conf import settings
 from django.db.utils import IntegrityError
 from django.core.management import call_command

@@ -3,7 +3,7 @@ import importlib
 from django.db import connection
 from django.core.management import call_command
 
-from tenant_schemas.management.commands.tenant_command import Command as TenantCommand
+from django_tenants.management.commands.tenant_command import Command as TenantCommand
 
 class Command(TenantCommand):
 

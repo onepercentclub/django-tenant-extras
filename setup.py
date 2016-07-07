@@ -21,7 +21,7 @@ setup(
     author_email="devteam@onepercentclub.com",
     install_requires=[
         'Django>=1.9,<1.10',
-        'django-tenant-schemas>=1.5.0',
+        'django-tenants>=1.1.7',
         'python-memcached>=1.53',
     ],
     tests_require={

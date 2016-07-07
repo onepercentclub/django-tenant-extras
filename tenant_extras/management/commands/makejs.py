@@ -14,7 +14,7 @@ from django.conf import settings
 import django
 from django.views.i18n import get_javascript_catalog, render_javascript_catalog
 
-from tenant_schemas.utils import get_public_schema_name, get_tenant_model
+from django_tenants.utils import get_public_schema_name, get_tenant_model
 
 
 class Command(NoArgsCommand):

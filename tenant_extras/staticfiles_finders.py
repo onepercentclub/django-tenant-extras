@@ -9,7 +9,7 @@ from django.contrib.staticfiles.finders import FileSystemFinder
 from django.core.files.storage import FileSystemStorage
 from django.contrib.staticfiles import utils
 
-from tenant_schemas.utils import get_tenant_model
+from django_tenants.utils import get_tenant_model
 
 
 class TenantStaticFilesFinder(FileSystemFinder):

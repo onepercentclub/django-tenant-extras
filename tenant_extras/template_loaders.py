@@ -5,13 +5,13 @@ from django.template.loaders.base import Loader
 from django.utils._os import safe_join
 from django.db import connection
 
-from tenant_schemas.postgresql_backend.base import FakeTenant
+from django_tenants.postgresql_backend.base import FakeTenant
 
 
 class FilesystemLoader(Loader):
     """
     Based on FileSystemLoader from django-tenant-schemas:
-    https://github.com/bernardopires/django-tenant-schemas/blob/master/tenant_schemas/template_loaders.py#L79
+    https://github.com/bernardopires/django-tenant-schemas/blob/master/django_tenants/template_loaders.py#L79
     Changes are:
     - Use MULTI_TENANT_DIR from config for path (not multiple paths in MULTITENANT_TEMPLATE_DIRS)
     - Use tenant.client_name not tenant.domain_url

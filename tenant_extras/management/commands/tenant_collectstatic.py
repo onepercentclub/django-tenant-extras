@@ -8,7 +8,7 @@ from django.db import connection
 from django.contrib.staticfiles.management.commands.collectstatic import (Command as BaseCommand)
 
 from tenant_extras.staticfiles_finders import TenantStaticFilesFinder
-from tenant_schemas.utils import get_public_schema_name, get_tenant_model
+from django_tenants.utils import get_public_schema_name, get_tenant_model
 
 
 class Command(BaseCommand):

@@ -5,7 +5,7 @@ from optparse import make_option, OptionParser
 from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
 
-from tenant_schemas.utils import get_public_schema_name, get_tenant_model
+from django_tenants.utils import get_public_schema_name, get_tenant_model
 
 
 class Command(BaseCommand):
