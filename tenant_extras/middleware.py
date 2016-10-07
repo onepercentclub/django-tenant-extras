@@ -3,6 +3,7 @@ import os
 
 from django import http
 from django.conf import settings
+from django.conf.urls.i18n import is_language_prefix_patterns_used
 from django.db import connection
 
 from django.middleware.locale import LocaleMiddleware
@@ -38,7 +39,7 @@ class DjangoTranslation(DjangoTranslationOriginal):
             translation = self._new_gnu_trans(localedir)
             self.merge(translation)
 
-    def _add_fallback(self):
+    def _add_fallback(self, localdirs):
         """Sets the GNUTranslations() fallback with the default language."""
         # Don't set a fallback for the default language or any English variant
         # (as it's empty, so it'll ALWAYS fall back to the default language)
@@ -78,7 +79,8 @@ class TenantLocaleMiddleware(LocaleMiddleware):
         tenant_name = connection.tenant.client_name
         site_locale = os.path.join(settings.MULTI_TENANT_DIR, tenant_name, 'locale')
 
-        check_path = self.is_language_prefix_patterns_used
+        urlconf = getattr(request, 'urlconf', settings.ROOT_URLCONF)
+        check_path = is_language_prefix_patterns_used(urlconf)
         language = translation.get_language_from_request(
             request, check_path=check_path)
         translation._trans._active.value = tenant_translation(language, tenant_name)
@@ -95,7 +97,8 @@ class TenantLocaleMiddleware(LocaleMiddleware):
         ignore_paths = getattr(settings, 'LOCALE_REDIRECT_IGNORE', None)
 
         # Get language from path
-        if self.is_language_prefix_patterns_used:
+        urlconf = getattr(request, 'urlconf', settings.ROOT_URLCONF)
+        if is_language_prefix_patterns_used(urlconf):
             language_from_path = translation.get_language_from_path(
                 request.path_info
             )
