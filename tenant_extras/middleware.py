@@ -3,7 +3,6 @@ import os
 
 from django import http
 from django.conf import settings
-from django.conf.urls.i18n import is_language_prefix_patterns_used
 from django.db import connection
 
 from django.middleware.locale import LocaleMiddleware
@@ -11,6 +10,7 @@ from django.utils.translation.trans_real import DjangoTranslation as DjangoTrans
 from django.utils import translation
 
 from .utils import get_tenant_properties
+from .compat import is_language_prefix_patterns_used
 
 _tenants = {}
 _translations = {}
@@ -39,7 +39,7 @@ class DjangoTranslation(DjangoTranslationOriginal):
             translation = self._new_gnu_trans(localedir)
             self.merge(translation)
 
-    def _add_fallback(self, localdirs):
+    def _add_fallback(self, localdirs=[]):
         """Sets the GNUTranslations() fallback with the default language."""
         # Don't set a fallback for the default language or any English variant
         # (as it's empty, so it'll ALWAYS fall back to the default language)
