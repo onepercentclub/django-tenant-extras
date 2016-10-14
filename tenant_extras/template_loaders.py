@@ -28,7 +28,7 @@ class FilesystemLoader(Loader):
         # and ALLOWED_HOSTS hasn't been correctly set.
         elif isinstance(connection.tenant, FakeTenant):
             if not template_dirs:
-                template_dirs = settings.TEMPLATE_DIRS
+                template_dirs = []
             for template_dir in template_dirs:
                 try:
                     yield safe_join(template_dir, template_name)

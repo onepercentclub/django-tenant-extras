@@ -15,6 +15,7 @@ from django.db import connection
 from ..drf_permissions import TenantConditionalOpenClose
 from ..middleware import TenantLocaleMiddleware
 from ..utils import TenantLanguage
+import tenant_extras.compat
 
 
 @override_settings(MULTI_TENANT_DIR='/clients', INSTALLED_APPS=(),
@@ -26,7 +27,7 @@ class TenantLocaleMiddlewareRedirectTests(TestCase):
         self.rf = RequestFactory()
         self.middleware = TenantLocaleMiddleware()
 
-    @patch.object(TenantLocaleMiddleware, 'is_language_prefix_patterns_used')
+    @patch.object(tenant_extras.compat, 'is_language_prefix_patterns_used')
     @patch.object(TenantLocaleMiddleware, 'process_request')
     def _process_response(self, request, mock_process_request, mock_other):
         mock_other.return_value = True
