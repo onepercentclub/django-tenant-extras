@@ -1,6 +1,5 @@
 from optparse import make_option
 from django.core import exceptions
-from django.core.management.base import BaseCommand
 from django.utils.encoding import force_str
 from django.utils.six.moves import input
 from tenant_schemas.utils import get_tenant_model
@@ -8,19 +7,19 @@ from django.conf import settings
 from django.db.utils import IntegrityError
 from django.core.management import call_command
 
+from .base import Command as BaseCommand
+
 
 class Command(BaseCommand):
     help = 'Create a tenant'
 
-    def __init__(self, *args, **kwargs):
-        super(Command, self).__init__(*args, **kwargs)
-        self.option_list = BaseCommand.option_list + (
-            make_option('--full-name', help='Specifies the full name for the tenant (e.g. "Our New Tenant").'),
-            make_option('--schema-name', help='Specifies the schema name for the tenant (e.g. "new_tenant").'),
-            make_option('--domain-url', help='Specifies the domain_url for the tenant (e.g. "new-tenant.localhost").'),
-            make_option('--client-name', help='Specifies the client name for the tenant (e.g. "new-tenant").'),
-            make_option('--post-command', help='Calls another management command after the tenant is created.')
-        )
+    option_list = BaseCommand.options + (
+        make_option('--full-name', help='Specifies the full name for the tenant (e.g. "Our New Tenant").'),
+        make_option('--schema-name', help='Specifies the schema name for the tenant (e.g. "new_tenant").'),
+        make_option('--domain-url', help='Specifies the domain_url for the tenant (e.g. "new-tenant.localhost").'),
+        make_option('--client-name', help='Specifies the client name for the tenant (e.g. "new-tenant").'),
+        make_option('--post-command', help='Calls another management command after the tenant is created.')
+    )
 
     def handle(self, *args, **options):
         name = options.get('full_name', None)

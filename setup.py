@@ -23,6 +23,7 @@ setup(
         'Django>=1.10,<1.11',
         'django-tenant-schemas>=1.5.0',
         'python-memcached>=1.53',
+        'transifex-client>=0.11',
     ],
     tests_require={
         'bunch==1.0.1',

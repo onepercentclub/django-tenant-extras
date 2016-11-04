@@ -2,24 +2,22 @@ import os
 import sys
 from optparse import make_option, OptionParser
 
-from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
 
 from tenant_schemas.utils import get_public_schema_name, get_tenant_model
+
+from .base import Command as BaseCommand
 
 
 class Command(BaseCommand):
     help = "Change tenant domain name."
 
-    def __init__(self):
-        self.option_list = self.option_list + (
-            make_option('--tenant', dest='tenant', default=None,
-                    help="Change domain for tenant."),
-            make_option('--domain', dest='domain', default=None,
-                    help="New domain for tenant."),
-        )
-
-        super(Command, self).__init__()
+    option_list = BaseCommand.options + (
+        make_option('--tenant', dest='tenant', default=None,
+                help="Change domain for tenant."),
+        make_option('--domain', dest='domain', default=None,
+                help="New domain for tenant."),
+    )
 
     def handle(self, *args, **options):
         tenant_name = options.get('tenant')

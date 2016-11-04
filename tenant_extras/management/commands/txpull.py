@@ -9,9 +9,11 @@ import contextlib
 from optparse import make_option, OptionParser
 
 from django.conf import settings
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 
 from txclib.project import Project
+
+from .base import Command as BaseCommand
 
 
 @contextlib.contextmanager
@@ -27,21 +29,18 @@ def temp_chdir(path):
 class Command(BaseCommand):
     help = "Pull tenant translations from Transifex."
 
-    def __init__(self):
-        self.option_list = self.option_list + (
-            make_option('--all', '-a', action='store_true', dest='all',
-                default=False, help='Pull translation messages for all tenants.'),
-            make_option('--tenant', '-t', dest='tenant', default=None,
-                help='Pull translation messages for tenant.'),
-            make_option('--deploy', '-d', dest='deploy', default=False, action='store_true',
-                help='Deploy will rename the \'en_GB\' locale to \'en\'.'),
-            make_option('--frontend', '-f', dest='frontend', default=False, action='store_true',
-                help='Pull translations to frontend directory.'),
-            make_option('--frontend-dir', '-e', dest='frontend_dir', default='frontend/lib',
-                help='Pull translations to frontend directory.'),
-        )
-
-        super(Command, self).__init__()
+    options = BaseCommand.options + (
+        make_option('--all', '-a', action='store_true', dest='all',
+            default=False, help='Pull translation messages for all tenants.'),
+        make_option('--tenant', '-t', dest='tenant', default=None,
+            help='Pull translation messages for tenant.'),
+        make_option('--deploy', '-d', dest='deploy', default=False, action='store_true',
+            help='Deploy will rename the \'en_GB\' locale to \'en\'.'),
+        make_option('--frontend', '-f', dest='frontend', default=False, action='store_true',
+            help='Pull translations to frontend directory.'),
+        make_option('--frontend-dir', '-e', dest='frontend_dir', default='frontend/lib',
+            help='Pull translations to frontend directory.'),
+    )
 
     def handle(self, *args, **options):
         process_all = options.get('all')

@@ -5,11 +5,13 @@ import os
 from optparse import make_option
 
 from django.conf import settings
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 from django.core.management.utils import find_command, popen_wrapper
 from django.utils._os import npath
 
 from django.core.management.commands.compilemessages import has_bom
+
+from .base import Command as BaseCommand
 
 
 class Command(BaseCommand):
@@ -20,7 +22,7 @@ class Command(BaseCommand):
     https://github.com/django/django/blob/1.6.8/django/core/management/commands/compilemessages.py
     """
 
-    option_list = BaseCommand.option_list + (
+    option_list = BaseCommand.options + (
         make_option('--locale', '-l', dest='locale', action='append',
                     help='locale(s) to process (e.g. de_AT). Default is to process all. Can be used multiple times.'),
         make_option('--tenant', dest='tenant', default=None, 

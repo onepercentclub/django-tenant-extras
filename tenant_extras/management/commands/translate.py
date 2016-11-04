@@ -10,26 +10,24 @@ from optparse import make_option, OptionParser
 import pip
 
 from django.conf import settings
-from django.core.management.base import BaseCommand
 from django.core.management import call_command
+
+from .base import Command as BaseCommand
 
 
 class Command(BaseCommand):
     help = "Scan i18n messages for per tenant translations."
 
-    def __init__(self):
-        self.option_list = self.option_list + (
-            make_option('--tenant', dest='tenant', default=None,
-                    help="Generate translation messages for tenant."),
-            make_option('--locale', '-l', dest='locale', action='append',
-                    help='locale(s) to process (e.g. de_AT). Default is to process all. Can be used multiple times.'),
-            make_option('--compile', '-c', dest='compile', action='store_true', default=False,
-                    help='compile the .po to .mo files.'),
-            make_option('--pocmd', '-d', dest='pocmd', default='makepo',
-                    help='alternative command to generate po files'),
-        )
-
-        super(Command, self).__init__()
+    options = BaseCommand.options + (
+        make_option('--tenant', dest='tenant', default=None,
+                help="Generate translation messages for tenant."),
+        make_option('--locale', '-l', dest='locale', action='append',
+                help='locale(s) to process (e.g. de_AT). Default is to process all. Can be used multiple times.'),
+        make_option('--compile', '-c', dest='compile', action='store_true', default=False,
+                help='compile the .po to .mo files.'),
+        make_option('--pocmd', '-d', dest='pocmd', default='makepo',
+                help='alternative command to generate po files'),
+    )
 
     def handle(self, *args, **options):
         default_ignore = ['*.orig', '.*', '.git', '*~', '*.pyc', '*.egg', '*.egg-info']
