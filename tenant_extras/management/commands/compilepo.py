@@ -19,17 +19,16 @@ class Command(BaseCommand):
 
     https://github.com/django/django/blob/1.6.8/django/core/management/commands/compilemessages.py
     """
-
-    option_list = BaseCommand.option_list + (
-        make_option('--locale', '-l', dest='locale', action='append',
-                    help='locale(s) to process (e.g. de_AT). Default is to process all. Can be used multiple times.'),
-        make_option('--tenant', dest='tenant', default=None, 
-                    help="Compile .po files for tenant."),
-    )
     help = 'Compiles .po files to .mo files for use with builtin gettext support.'
 
     requires_model_validation = False
     leave_locale_alone = True
+
+    def add_arguments(self, parser):
+        parser.add_argument('--locale', '-l', dest='locale', action='append',
+                            help='locale(s) to process (e.g. de_AT). Default is to process all. Can be used multiple times.'),
+        parser.add_argument('--tenant', dest='tenant', default=None,
+                            help="Compile .po files for tenant."),
 
     def handle(self, **options):
         locale = options.get('locale')
@@ -39,7 +38,7 @@ class Command(BaseCommand):
 
 def compile_messages(stdout, locale=None, tenant=None):
     """
-    Standard compile_messages updated to handle compiling po files for 
+    Standard compile_messages updated to handle compiling po files for
     multiple tenants if MULTI_TENANT_DIR settings defined.
     """
     program = 'msgfmt'
@@ -55,7 +54,7 @@ def compile_messages(stdout, locale=None, tenant=None):
     tenant_dir = getattr(settings, 'MULTI_TENANT_DIR', None)
     if tenant and os.path.isdir(os.path.join(tenant_dir, tenant)):
         basedirs += [os.path.join(tenant_dir, tenant, 'locale')]
-    else: 
+    else:
         # Compile all tenants
         basedirs += [os.path.join(tenant_dir, d) for d in os.listdir(tenant_dir) if os.path.isdir(os.path.join(tenant_dir, d))]
 

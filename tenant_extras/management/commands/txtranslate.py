@@ -15,13 +15,9 @@ from .translate import Command as BaseCommand
 class Command(BaseCommand):
     help = "Tenant translations with optional Transifex push."
 
-    def __init__(self):
-        self.option_list = self.option_list + (
-            make_option('--push', '-p', dest='push', action='store_true',
-                default=False, help='Push translations to Transifex.'),
-        )
-
-        super(Command, self).__init__()
+    def add_arguments(self, parser):
+        parser.add_argument('--push', '-p', dest='push', action='store_true',
+                            default=False, help='Push translations to Transifex.'),
 
     def handle(self, *args, **options):
         self.push = options.get('push')

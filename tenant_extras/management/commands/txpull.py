@@ -21,27 +21,23 @@ def temp_chdir(path):
         os.chdir(path)
         yield
     finally:
-        os.chdir(starting_directory) 
+        os.chdir(starting_directory)
 
 
 class Command(BaseCommand):
     help = "Pull tenant translations from Transifex."
 
-    def __init__(self):
-        self.option_list = self.option_list + (
-            make_option('--all', '-a', action='store_true', dest='all',
-                default=False, help='Pull translation messages for all tenants.'),
-            make_option('--tenant', '-t', dest='tenant', default=None,
-                help='Pull translation messages for tenant.'),
-            make_option('--deploy', '-d', dest='deploy', default=False, action='store_true',
-                help='Deploy will rename the \'en_GB\' locale to \'en\'.'),
-            make_option('--frontend', '-f', dest='frontend', default=False, action='store_true',
-                help='Pull translations to frontend directory.'),
-            make_option('--frontend-dir', '-e', dest='frontend_dir', default='frontend/lib',
-                help='Pull translations to frontend directory.'),
-        )
-
-        super(Command, self).__init__()
+    def add_arguments(self, parser):
+        parser.add_argument('--all', '-a', action='store_true', dest='all',
+                            default=False, help='Pull translation messages for all tenants.'),
+        parser.add_argument('--tenant', '-t', dest='tenant', default=None,
+                            help='Pull translation messages for tenant.'),
+        parser.add_argument('--deploy', '-d', dest='deploy', default=False, action='store_true',
+                            help='Deploy will rename the \'en_GB\' locale to \'en\'.'),
+        parser.add_argument('--frontend', '-f', dest='frontend', default=False, action='store_true',
+                            help='Pull translations to frontend directory.'),
+        parser.add_argument('--frontend-dir', '-e', dest='frontend_dir', default='frontend/lib',
+                            help='Pull translations to frontend directory.'),
 
     def handle(self, *args, **options):
         process_all = options.get('all')
@@ -58,8 +54,8 @@ class Command(BaseCommand):
                                 os.path.basename(sys.argv[0]), sys.argv[1]))
 
         if process_all:
-            # Even if we are pulling translations for the frontend we 
-            # still use the backend MULTI_TENANT_DIR to work out 
+            # Even if we are pulling translations for the frontend we
+            # still use the backend MULTI_TENANT_DIR to work out
             # the list of tenants as this dir will only contain
             # tenant names.
             tenant_dir = getattr(settings, 'MULTI_TENANT_DIR', None)
@@ -76,7 +72,7 @@ class Command(BaseCommand):
         else:
             tenant_dir = os.path.join(getattr(settings, 'MULTI_TENANT_DIR', None), tenant)
 
-        with temp_chdir(tenant_dir):            
+        with temp_chdir(tenant_dir):
             # Pull latest translations from Transifex
             project = Project(tenant_dir)
             project.pull(fetchsource=False, force=True, overwrite=True, fetchall=True)
