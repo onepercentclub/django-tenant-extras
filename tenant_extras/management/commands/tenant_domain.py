@@ -11,15 +11,11 @@ from tenant_schemas.utils import get_public_schema_name, get_tenant_model
 class Command(BaseCommand):
     help = "Change tenant domain name."
 
-    def __init__(self):
-        self.option_list = self.option_list + (
-            make_option('--tenant', dest='tenant', default=None,
+    def add_arguments(self, parser):
+        parser.add_argument('--tenant', dest='tenant', default=None,
                     help="Change domain for tenant."),
-            make_option('--domain', dest='domain', default=None,
+        parser.add_argument('--domain', dest='domain', default=None,
                     help="New domain for tenant."),
-        )
-
-        super(Command, self).__init__()
 
     def handle(self, *args, **options):
         tenant_name = options.get('tenant')
