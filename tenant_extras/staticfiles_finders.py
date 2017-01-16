@@ -1,15 +1,16 @@
-from django.utils._os import safe_join
+from collections import OrderedDict
 import os
 
+from django.utils._os import safe_join
+
 from django.core.exceptions import ImproperlyConfigured
-from django.utils.datastructures import SortedDict
 from django.conf import settings
 
 from django.contrib.staticfiles.finders import FileSystemFinder
 from django.core.files.storage import FileSystemStorage
 from django.contrib.staticfiles import utils
 
-from tenant_schemas.utils import get_tenant_model
+import tenant_schemas.utils
 
 
 class TenantStaticFilesFinder(FileSystemFinder):
@@ -17,9 +18,9 @@ class TenantStaticFilesFinder(FileSystemFinder):
     def __init__(self, apps=None, *args, **kwargs):
         # List of locations with static files
         self.locations = []
-        
+
         # Maps dir paths to an appropriate storage instance
-        self.storages = SortedDict()
+        self.storages = OrderedDict()
 
         if not isinstance(settings.MULTI_TENANT_DIR, str):
             raise ImproperlyConfigured(
@@ -27,10 +28,12 @@ class TenantStaticFilesFinder(FileSystemFinder):
 
         tenant_dir = settings.MULTI_TENANT_DIR
         for tenant_name in [f for f in os.listdir(tenant_dir) if os.path.isdir(os.path.join(tenant_dir, f))]:
-            tenant_static_dir = os.path.join(getattr(settings, 'MULTI_TENANT_DIR', None), 
-                                        tenant_name,
-                                        'static')
-            self.locations.append((tenant_name, tenant_static_dir))
+            tenant_static_dir = os.path.join(getattr(settings, 'MULTI_TENANT_DIR', None),
+                                             tenant_name,
+                                             'static')
+
+            if os.path.exists(tenant_static_dir):
+                self.locations.append((tenant_name, tenant_static_dir))
 
         for prefix, root in self.locations:
             filesystem_storage = FileSystemStorage(location=root)
@@ -47,7 +50,7 @@ class TenantStaticFilesFinder(FileSystemFinder):
         MULTI_TENANT_DIR/greatbarier/static/images/logo.jpg
 
         """
-        tenants = get_tenant_model().objects.all()
+        tenants = tenant_schemas.utils.get_tenant_model().objects.all()
         tenant_dir = getattr(settings, 'MULTI_TENANT_DIR', None)
 
         if not tenant_dir:
