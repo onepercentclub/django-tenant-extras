@@ -16,6 +16,8 @@ class Command(BaseCommand):
     help = "Tenant translations with optional Transifex push."
 
     def add_arguments(self, parser):
+        super(Command, self).add_arguments(parser)
+
         parser.add_argument('--push', '-p', dest='push', action='store_true',
                             default=False, help='Push translations to Transifex.'),
 
