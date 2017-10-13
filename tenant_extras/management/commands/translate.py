@@ -46,6 +46,12 @@ class Command(BaseCommand):
         # Generate translation file for django
         self.stdout.write('Translating:\r\n> Making Django po files...')
 
+        # Ensure locale directories are created
+        for locale in self.locale:
+            locale_dir = os.path.join(settings.PROJECT_ROOT, 'locale', locale)
+            if not os.path.exists(locale_dir):
+                os.makedirs(locale_dir)
+
         # Generate po file for tenant
         call_command(self.pocmd,
                      verbosity=self.verbosity,
