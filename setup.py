@@ -20,7 +20,7 @@ setup(
     author="1%Club Developers",
     author_email="devteam@onepercentclub.com",
     install_requires=[
-        'Django>=1.10,<1.11',
+        'Django',
         'django-tenant-schemas>=1.5.0',
         'python-memcached>=1.53',
     ],
@@ -28,7 +28,7 @@ setup(
         'munch',
         'django-nose>=1.4.4',
         'django-setuptest==0.2.1',
-        'djangorestframework>=3.3,<3.4',
+        'djangorestframework',
     ],
     test_suite="tenant_extras.runtests.runtests",
     classifiers=[
