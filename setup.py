@@ -25,7 +25,7 @@ setup(
         'python-memcached>=1.53',
     ],
     tests_require=[
-        'bunch==1.0.1',
+        'munch',
         'django-nose>=1.4.4',
         'django-setuptest==0.2.1',
         'djangorestframework>=3.3,<3.4',

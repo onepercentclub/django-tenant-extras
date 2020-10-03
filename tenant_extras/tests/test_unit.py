@@ -2,7 +2,7 @@ import os
 import mock
 from mock import patch
 
-from bunch import bunchify
+from munch import munchify
 
 from django.utils.translation import ugettext as _
 from django.conf import settings
@@ -75,7 +75,7 @@ class TenantLocaleMiddlewareRedirectTests(TestCase):
 
 
 @mock.patch('django.db.connection',
-            bunchify({'tenant': {'name': 'My Test', 'client_name': 'test'}}))
+            munchify({'tenant': {'name': 'My Test', 'client_name': 'test'}}))
 class ConfContextProcessorTestCase(TestCase):
 
     def setUp(self):
@@ -96,12 +96,12 @@ class ConfContextProcessorTestCase(TestCase):
 class TenantLocaleTestCase(TestCase):
 
     def setUp(self):
-        self.tenant1 = bunchify({
+        self.tenant1 = munchify({
             'name': 'My Test',
             'client_name': 'tenant1'
         })
 
-        self.tenant2 = bunchify({
+        self.tenant2 = munchify({
             'name': 'My Test',
             'client_name': 'tenant2'
         })
@@ -135,7 +135,7 @@ class TenantLocaleTestCase(TestCase):
 
 
 @mock.patch('django.db.connection',
-            bunchify({'tenant': {'name': 'My Test', 'client_name': 'test'}}))
+            munchify({'tenant': {'name': 'My Test', 'client_name': 'test'}}))
 class TenantPropertiesContextProcessorTestCase(TestCase):
 
     def setUp(self):
