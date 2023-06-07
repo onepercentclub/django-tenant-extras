@@ -9,8 +9,6 @@ from django.core.management.base import BaseCommand, CommandError
 from django.core.management.utils import find_command, popen_wrapper
 from django.utils._os import npath
 
-from django.core.management.commands.compilemessages import has_bom
-
 
 class Command(BaseCommand):
     """
@@ -80,8 +78,6 @@ def _compile(stdout, locale, basedir, program):
                     continue
                 stdout.write('processing file %s in %s\n' % (f, dirpath))
                 fn = os.path.join(dirpath, f)
-                if has_bom(fn):
-                    raise CommandError("The %s file has a BOM (Byte Order Mark). Django only supports .po files encoded in UTF-8 and without any BOM." % fn)
                 pf = os.path.splitext(fn)[0]
                 args = [program, '--check-format', '-o', npath(pf + '.mo'), npath(pf + '.po')]
                 output, errors, status = popen_wrapper(args)
