@@ -7,7 +7,6 @@ from optparse import make_option
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.core.management.utils import find_command, popen_wrapper
-from django.utils._os import npath
 
 
 class Command(BaseCommand):
@@ -79,7 +78,7 @@ def _compile(stdout, locale, basedir, program):
                 stdout.write('processing file %s in %s\n' % (f, dirpath))
                 fn = os.path.join(dirpath, f)
                 pf = os.path.splitext(fn)[0]
-                args = [program, '--check-format', '-o', npath(pf + '.mo'), npath(pf + '.po')]
+                args = [program, '--check-format', '-o', pf + '.mo', pf + '.po']
                 output, errors, status = popen_wrapper(args)
                 if status:
                     if errors:
