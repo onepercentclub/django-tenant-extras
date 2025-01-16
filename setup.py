@@ -23,6 +23,7 @@ setup(
         'Django',
         'django-tenant-schemas>=1.5.0',
         'python-memcached>=1.53',
+        'pymemcache==4.0.0',
     ],
     tests_require=[
         'munch',
